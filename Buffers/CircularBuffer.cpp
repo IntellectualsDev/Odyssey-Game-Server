@@ -9,23 +9,39 @@ CircularBuffer::CircularBuffer(size_t capacity) : capacity(capacity){
 }
 
 bool CircularBuffer::push(unique_ptr<Packet> packet) {
-    if(isFull()){
-        return false;
-    }
-    buffer[tail] = std::move(packet);
-    tail = (tail+1) % capacity;
-    count++;
-    return true;
+    return writeAction([&]() -> bool{
+        if (isFull()) {
+            return false;
+        }
+        buffer[tail] = std::move(packet);
+        tail = (tail + 1) % capacity;
+        count++;
+        return true;
+    });
 }
 
 unique_ptr<Packet> CircularBuffer::pop() {
-    if(isEmpty()){
-        return nullptr;
-    }
-    auto packet = std::move(buffer[head]);
-    head = (head + 1) & capacity;
-    count--;
-    return packet;
+    return writeAction([&]() -> unique_ptr<Packet> {
+        if(isEmpty()){
+            return nullptr;
+        }
+        auto packet = std::move(buffer[head]);
+        head = (head + 1) & capacity;
+        count--;
+        return packet;
+    });
+}
+
+void CircularBuffer::resetBuffer() {
+    writeAction([&]() -> void {
+        for(auto& packet : buffer){
+            packet.reset(); // this will clear the unique ptr contents, and unique ptrs will automatically destruct Packet
+        }
+
+        head = 0;
+        tail = 0;
+        count = 0;
+    });
 }
 
 bool CircularBuffer::isEmpty() const {

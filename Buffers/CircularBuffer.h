@@ -8,16 +8,19 @@
 #include <vector>
 #include <enet/enet.h>
 #include "../Buffers/PacketBuffer.h"
+#include "../Templates/ThreadSafeData.h"
 
 using namespace std;
 
-class CircularBuffer {
+class CircularBuffer : public ThreadSafeData{
 public:
     explicit CircularBuffer(size_t capacity);
 
     bool push(unique_ptr<Packet> packet);
 
     unique_ptr<Packet> pop();
+
+    void resetBuffer();
 
     bool isEmpty() const;
 
