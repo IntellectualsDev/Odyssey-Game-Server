@@ -33,6 +33,9 @@ public:
 private:
     vector<unique_ptr<CircularBuffer>> partitions;
     set<size_t> freePartitions;
+
+    std::mutex mutex;
+
     size_t maxPartitions;
     size_t maxBufferSize;
 };

@@ -12,7 +12,7 @@
 
 using namespace std;
 
-class CircularBuffer : public ThreadSafeData{
+class CircularBuffer {
 public:
     explicit CircularBuffer(size_t capacity);
 
@@ -28,6 +28,10 @@ public:
 
 private:
     vector<unique_ptr<Packet>> buffer;
+
+    mutable mutex mutex;
+    condition_variable not_empty;
+
     size_t head = 0;
     size_t tail = 0;
     size_t count = 0;
