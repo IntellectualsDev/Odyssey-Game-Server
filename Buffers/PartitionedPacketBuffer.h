@@ -18,7 +18,7 @@ public:
     PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize);
 
     // TODO: Allocate partition (include reuse parition func)
-    optional<size_t> allocatePartition();
+    size_t allocatePartition();
 
     // TODO: Free allocated partition
     void freePartition(size_t index);
