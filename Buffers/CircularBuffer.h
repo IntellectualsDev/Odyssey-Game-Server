@@ -8,6 +8,7 @@
 #include <vector>
 #include <enet/enet.h>
 #include "../Buffers/PacketBuffer.h"
+#include "../Templates/ThreadSafeData.h"
 
 using namespace std;
 
@@ -19,12 +20,20 @@ public:
 
     unique_ptr<Packet> pop();
 
+    void resetBuffer();
+
+    void notifyAll();
+
     bool isEmpty() const;
 
     bool isFull() const;
 
 private:
     vector<unique_ptr<Packet>> buffer;
+
+    mutable mutex mutex;
+    condition_variable not_empty;
+
     size_t head = 0;
     size_t tail = 0;
     size_t count = 0;

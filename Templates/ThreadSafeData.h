@@ -28,9 +28,9 @@ protected:
     }
 
     template <typename Action>
-    void writeAction(Action action) {
+    auto writeAction(Action action) -> decltype(action()) {
         unique_lock<shared_mutex> lock(mutex);
-        action();
+        return action();
     }
 };
 

@@ -6,19 +6,35 @@
 #define ODYSSEY_GAME_SERVER_LOBBYMANAGEMENTSERVICE_H
 
 #include "../Buffers/PartitionedPacketBuffer.h"
+#include "../Buffers/PacketBuffer.h"
 
 class LobbyManagementService {
 public:
-    LobbyManagementService(PartitionedPacketBuffer& receiveBuffer);
+    LobbyManagementService(PartitionedPacketBuffer& receiveBuffer, PacketBuffer& outputBuffer); // TODO: Inject the output Buffer as well
 
-    // TODO: Create an allocated partition method (encapsulate reused partition func.)
+    // TODO: Partitioned Receive Buffer methods
+    optional<size_t> createReceiveBufferPartition();
+    void freeReceiveBufferPartition(size_t index);
 
-    // TODO: Free allocated partition method
+    unique_ptr<Packet> popFromReceiveBufferParition(size_t index);
+    bool pushToReceiveBufferPartition(size_t index, unique_ptr<Packet> packet);
+    void notifyAllOnPartition(size_t index);
 
-    // TODO: Print Lobby partition stats
+    void receiveBufferStats();
+    void myPartitionStats();
+
+    // TODO: Standard Output Buffer methods
+    void pushToOutputBuffer(unique_ptr<Packet> packet);
+
+    // TODO: Encapsulated Game Logic methods
+
+
+    // TODO:
+
 
 private:
     PartitionedPacketBuffer& receiveBuffer;
+    PacketBuffer& outputBuffer;
 
 };
 
