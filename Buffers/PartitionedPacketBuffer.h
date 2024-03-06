@@ -18,7 +18,7 @@ public:
     PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize);
 
     // TODO: Allocate partition (include reuse parition func)
-    size_t allocatePartition();
+    std::optional<size_t> allocatePartition();
 
     // TODO: Free allocated partition
     void freePartition(size_t index);
@@ -27,6 +27,8 @@ public:
     bool pushToPartition(size_t index, unique_ptr<Packet> packet);
 
     unique_ptr<Packet> popFromPartition(size_t index);
+
+    void notifyAllOnPartition(size_t index);
 
 
     // TODO: Print Buffer stats (avg partition fill %) (avg buffer fill &) (number of allocated partitions)

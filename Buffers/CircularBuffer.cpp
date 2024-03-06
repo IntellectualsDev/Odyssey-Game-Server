@@ -77,6 +77,10 @@ void CircularBuffer::resetBuffer() {
 //    });
 }
 
+void CircularBuffer::notifyAll() {
+    not_empty.notify_all();
+}
+
 bool CircularBuffer::isEmpty() const {
     return count == 0;
 }

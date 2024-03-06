@@ -7,7 +7,7 @@
 LobbyManagementService::LobbyManagementService(PartitionedPacketBuffer &receiveBuffer, PacketBuffer &outputBuffer)
 : receiveBuffer(receiveBuffer), outputBuffer(outputBuffer) {}
 
-size_t LobbyManagementService::createReceiveBufferPartition() {
+optional<size_t> LobbyManagementService::createReceiveBufferPartition() {
     return receiveBuffer.allocatePartition();
 }
 
@@ -25,6 +25,10 @@ bool LobbyManagementService::pushToReceiveBufferPartition(size_t index, unique_p
 
 void LobbyManagementService::pushToOutputBuffer(unique_ptr<Packet> packet) {
     outputBuffer.addPacket(std::move(packet));
+}
+
+void LobbyManagementService::notifyAllOnPartition(size_t index) {
+    receiveBuffer.notifyAllOnPartition(index);
 }
 
 void LobbyManagementService::receiveBufferStats() {

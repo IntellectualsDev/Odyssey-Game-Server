@@ -75,3 +75,7 @@ unique_ptr<Packet> PartitionedPacketBuffer::popFromPartition(size_t index) {
     }
     return partitions[index]->pop();
 }
+
+void PartitionedPacketBuffer::notifyAllOnPartition(size_t index) {
+    partitions[index]->notifyAll();
+}

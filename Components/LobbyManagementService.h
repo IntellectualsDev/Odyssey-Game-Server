@@ -13,10 +13,13 @@ public:
     LobbyManagementService(PartitionedPacketBuffer& receiveBuffer, PacketBuffer& outputBuffer); // TODO: Inject the output Buffer as well
 
     // TODO: Partitioned Receive Buffer methods
-    size_t createReceiveBufferPartition();
+    optional<size_t> createReceiveBufferPartition();
     void freeReceiveBufferPartition(size_t index);
+
     unique_ptr<Packet> popFromReceiveBufferParition(size_t index);
     bool pushToReceiveBufferPartition(size_t index, unique_ptr<Packet> packet);
+    void notifyAllOnPartition(size_t index);
+
     void receiveBufferStats();
     void myPartitionStats();
 

@@ -22,6 +22,8 @@ public:
 
     void resetBuffer();
 
+    void notifyAll();
+
     bool isEmpty() const;
 
     bool isFull() const;
