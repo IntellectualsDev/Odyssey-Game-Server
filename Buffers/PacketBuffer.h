@@ -14,6 +14,12 @@
 #include <queue>
 #include <memory>
 
+// Needed for manual building
+#include <functional>
+#include <atomic>
+
+
+
 using namespace std;
 
 /*

@@ -8,6 +8,9 @@
 #include <string>
 #include <map>
 
+// include in manual build
+#include <cstring>
+
 #include "../Buffers/PacketBuffer.h"
 
 using namespace std;

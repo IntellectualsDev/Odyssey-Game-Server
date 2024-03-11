@@ -5,8 +5,16 @@
 #ifndef ODYSSEY_GAME_SERVER_CIRCULARBUFFER_H
 #define ODYSSEY_GAME_SERVER_CIRCULARBUFFER_H
 
+
+
 #include <vector>
 #include <enet/enet.h>
+
+// needed for manual build
+#include <mutex> 
+#include <memory>
+#include <condition_variable>
+
 #include "../Buffers/PacketBuffer.h"
 #include "../Templates/ThreadSafeData.h"
 
@@ -16,9 +24,9 @@ class CircularBuffer {
 public:
     explicit CircularBuffer(size_t capacity);
 
-    bool push(unique_ptr<Packet> packet);
+    bool push(std::unique_ptr<Packet> packet);
 
-    unique_ptr<Packet> pop();
+    std::unique_ptr<Packet> pop();
 
     void resetBuffer();
 
@@ -29,10 +37,10 @@ public:
     bool isFull() const;
 
 private:
-    vector<unique_ptr<Packet>> buffer;
+    std::vector<std::unique_ptr<Packet>> buffer;
 
-    mutable mutex mutex;
-    condition_variable not_empty;
+    mutable std::mutex mutex;
+    std::condition_variable not_empty;
 
     size_t head = 0;
     size_t tail = 0;
