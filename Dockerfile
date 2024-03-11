@@ -2,6 +2,8 @@ FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+EXPOSE 7777/udp
+
 #Install the dependencies required for the build
     # build-essential (GNU Compiler)
     # libstdc++-11-dev (C++ std libraries)
