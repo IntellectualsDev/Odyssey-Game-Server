@@ -23,6 +23,8 @@ public:
 private:
     void run();
     void processPacket(unique_ptr<Packet> packet);
+    void update();
+    void sendSnapShot();
 
     LobbyManagementService LobbyServices;
 
@@ -30,6 +32,11 @@ private:
 
     atomic<bool> stopFlag;
     thread workerThread;
+
+    uint32_t tickNumber = 0;
+    const float tickRate = 60.0f;
+//    const float secondPerTick = 1.0f / tickRate;
+    std::chrono::steady_clock::time_point lastTick;
 };
 
 

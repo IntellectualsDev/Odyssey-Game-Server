@@ -32,16 +32,43 @@ void GameLobby::stop() {
 }
 
 void GameLobby::run() {
+    auto lastTick = std::chrono::steady_clock::now();
+    const auto secondsPerTick = std::chrono::duration<float>(1.0f / tickRate);
+
+//    auto nextTick = lastTick + secondPerTick;
+
     while(!stopFlag.load()){
-        auto packet = LobbyServices.popFromReceiveBufferParition(partitionIndex);
-        if(packet){
-            processPacket(std::move(packet));
+        auto nextTick = lastTick + secondsPerTick;
+
+        while(std::chrono::steady_clock::now() < nextTick){
+            auto packet = LobbyServices.popFromReceiveBufferParition(partitionIndex);
+            if(packet){
+                processPacket(std::move(packet)); // TODO: this will update the global game state
+            } else{
+                break; // no more packets left
+            }
+        }
+
+        sendSnapShot();
+        tickNumber++;
+
+        auto now = std::chrono::steady_clock::now();
+        auto timeRemaining = nextTick - now;
+        if ( timeRemaining > std::chrono::milliseconds(0)){
+            std::this_thread::sleep_for(timeRemaining);
         }
     }
+
+
+
 }
 
 void GameLobby::processPacket(unique_ptr<Packet> packet) {
     printf("Game Lobby received packet of size %zu and data = \"%s\"\n\n", packet->packet->dataLength, packet->packet->data);
 
     // TODO: Enter a decision tree determining what authoritative decision is required
+}
+
+void GameLobby::update() {
+
 }
