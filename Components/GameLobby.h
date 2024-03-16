@@ -16,7 +16,7 @@ using namespace std;
 
 class GameLobby {
 public:
-    GameLobby(PartitionedPacketBuffer& receiveBuffer, PacketBuffer& outputBuffer);
+    GameLobby(PartitionedPacketBuffer& receiveBuffer, PacketBuffer& outputBuffer, mutex& consoleMutex);
     void start();
     void stop();
 
@@ -29,6 +29,10 @@ private:
     LobbyManagementService LobbyServices;
 
     size_t partitionIndex;
+public:
+    size_t getPartitionIndex() const;
+
+private:
 
     atomic<bool> stopFlag;
     thread workerThread;
@@ -37,6 +41,8 @@ private:
     const float tickRate = 60.0f;
 //    const float secondPerTick = 1.0f / tickRate;
     std::chrono::steady_clock::time_point lastTick;
+
+    mutex& consoleMutex;
 };
 
 

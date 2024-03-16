@@ -3,6 +3,7 @@
 
 #include "Buffers/PartitionedPacketBuffer.h"
 #include "Buffers/PacketBuffer.h"
+#include "Components/GameLobby.h"
 
 #include <mutex>
 mutex consoleMutex;
@@ -18,17 +19,17 @@ void producer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int startI
     }
 }
 
-void consumer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int numPackets){
-    for(int i = 0; i < numPackets; i++){
-        auto packet = buffer.popFromPartition(partitionIndex);
-        if(packet) {
-            lock_guard<std::mutex> guard(consoleMutex);
-            cout << "Consumer got packet with label " << packet->label << endl;
-            enet_packet_destroy(packet->packet);
-        }
-        this_thread::sleep_for(chrono::milliseconds(5));
-    }
-}
+//void consumer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int numPackets){
+//    for(int i = 0; i < numPackets; i++){
+//        auto packet = buffer.popFromPartition(partitionIndex);
+//        if(packet) {
+//            lock_guard<std::mutex> guard(consoleMutex);
+//            cout << "Consumer got packet with label " << packet->label << endl;
+//            enet_packet_destroy(packet->packet);
+//        }
+//        this_thread::sleep_for(chrono::milliseconds(5));
+//    }
+//}
 
 //void producer(PartitionedPacketBuffer& buffer, int numPackets) {
 //    for (int i = 1; i <= numPackets; ++i) {
@@ -58,29 +59,49 @@ int main() {
     }
     atexit (enet_deinitialize);
 
-    const size_t bufferSize = 10;
+    const size_t bufferSize = 100;
     const size_t numPartitions = 3;
-    PartitionedPacketBuffer buffer(numPartitions, bufferSize);
+    PartitionedPacketBuffer receiveBuffer(numPartitions, bufferSize, consoleMutex);
+    PacketBuffer outputBuffer;
 
-    auto partition1 = buffer.allocatePartition().value_or(-1);
-    auto partition2 = buffer.allocatePartition().value_or(-1);
+    GameLobby lobby(receiveBuffer, outputBuffer, consoleMutex);
+    auto partitionIndex = lobby.getPartitionIndex();
 
-    if(partition1 == -1 || partition1 == -1) {
-        cerr << "Failed to allocate partitions" << endl;
+//    auto partition1 = receiveBuffer.allocatePartition().value_or(-1);
+
+    if (partitionIndex == -1) {
+        std::cerr << "Failed to allocate partition" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    // Start producer and consumer threads for each partition
-    std::thread producer1(producer, std::ref(buffer), partition1, 1, 50);
-    std::thread consumer1(consumer, std::ref(buffer), partition1, 50);
+    lobby.start();
 
-    std::thread producer2(producer, std::ref(buffer), partition2, 51, 100);
-    std::thread consumer2(consumer, std::ref(buffer), partition2, 50);
+    // Start producer to simulate packet creation
+    std::thread producerThread(producer, std::ref(receiveBuffer), partitionIndex, 1, 50);
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    producerThread.join();
+    std::this_thread::sleep_for(std::chrono::seconds(5)); // Give some time for processing
+    lobby.stop();
 
-    // Wait for all threads to finish
-    producer1.join();
-    consumer1.join();
-    producer2.join();
-    consumer2.join();
+    return 0;
+//    auto partition2 = buffer.allocatePartition().value_or(-1);
+
+//    if(partition1 == -1 || partition1 == -1) {
+//        cerr << "Failed to allocate partitions" << endl;
+//    }
+//
+//    // Start producer and consumer threads for each partition
+//    std::thread producer1(producer, std::ref(buffer), partition1, 1, 50);
+//    std::thread consumer1(consumer, std::ref(buffer), partition1, 50);
+//
+//    std::thread producer2(producer, std::ref(buffer), partition2, 51, 100);
+//    std::thread consumer2(consumer, std::ref(buffer), partition2, 50);
+//
+//    // Wait for all threads to finish
+//    producer1.join();
+//    consumer1.join();
+//    producer2.join();
+//    consumer2.join();
 
 //    const size_t bufferSize = 100; // Large enough to avoid overflow
 //    const size_t numPackets = 50; // Number of packets to produce/consume

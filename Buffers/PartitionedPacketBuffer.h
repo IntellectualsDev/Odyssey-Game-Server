@@ -10,12 +10,15 @@
 #include "../Templates/ThreadSafeData.h"
 #include "PacketBuffer.h"
 #include "CircularBuffer.h"
+#include <mutex>
+#include <thread>
+#include <condition_variable>
 
 using namespace std;
 
 class PartitionedPacketBuffer : public ThreadSafeData{
 public:
-    PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize);
+    PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize, std::mutex& consoleMutex);
 
     // TODO: Allocate partition (include reuse parition func)
     std::optional<size_t> allocatePartition();
@@ -40,6 +43,8 @@ private:
 
     size_t maxPartitions;
     size_t maxBufferSize;
+
+    std::mutex& consoleMutex;
 };
 
 

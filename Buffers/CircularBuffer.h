@@ -36,6 +36,7 @@ public:
 
     bool isFull() const;
 
+
 private:
     std::vector<std::unique_ptr<Packet>> buffer;
 
@@ -45,6 +46,10 @@ private:
     size_t head = 0;
     size_t tail = 0;
     size_t count = 0;
+public:
+    size_t getCount() const;
+
+private:
     size_t capacity = 0;
 };
 

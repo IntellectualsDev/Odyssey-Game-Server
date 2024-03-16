@@ -33,24 +33,26 @@ bool CircularBuffer::push(unique_ptr<Packet> packet) {
 
 unique_ptr<Packet> CircularBuffer::pop() {
     unique_lock<std::mutex> lock(mutex);
-    not_empty.wait(lock, [this] {
-        return (!isEmpty());
-    });
+    if(isEmpty()){
+        return nullptr;
+    }
 
     auto packet = std::move(buffer[head]);
     head = (head + 1) % capacity;
     count--;
     return packet;
 
-//    return writeAction([&]() -> unique_ptr<Packet> {
-//        if(isEmpty()){
-//            return nullptr;
-//        }
-//        auto packet = std::move(buffer[head]);
-//        head = (head + 1) & capacity;
-//        count--;
-//        return packet;
+
+    // previous wait loop, that would cause blocking wait until a packet is produced
+//    unique_lock<std::mutex> lock(mutex);
+//    not_empty.wait(lock, [this] {
+//        return (!isEmpty());
 //    });
+//
+//    auto packet = std::move(buffer[head]);
+//    head = (head + 1) % capacity;
+//    count--;
+//    return packet;
 }
 
 void CircularBuffer::resetBuffer() {
@@ -87,4 +89,8 @@ bool CircularBuffer::isEmpty() const {
 
 bool CircularBuffer::isFull() const {
     return count == capacity;
+}
+
+size_t CircularBuffer::getCount() const {
+    return count;
 }

@@ -4,7 +4,7 @@
 
 #include "PartitionedPacketBuffer.h"
 
-PartitionedPacketBuffer::PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize) : maxBufferSize(bufferSize), maxPartitions(numPartitions) {}
+PartitionedPacketBuffer::PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize, std::mutex& consoleMutex) : maxBufferSize(bufferSize), maxPartitions(numPartitions), consoleMutex(consoleMutex) {}
 
 optional<size_t> PartitionedPacketBuffer::allocatePartition() {
     lock_guard<std::mutex> lock(mutex); // use a lock guard because it keep lock untl its destruction
@@ -66,6 +66,11 @@ bool PartitionedPacketBuffer::pushToPartition(size_t index, unique_ptr<Packet> p
     if(index >= partitions.size()){
         return false;
     }
+    {
+        std::lock_guard<std::mutex> guard(consoleMutex); //testing
+        cout << "Added Packet Label: " << packet->label << "\ncount = " << partitions[index]->getCount()+1 << endl;
+    }
+
     return partitions[index]->push(move(packet));
 }
 
