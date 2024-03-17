@@ -7,12 +7,12 @@
 
 #include <raylib.h>
 #include <iostream>
-#include "Bullet.h"
+//#include "Bullet.h"
 #include "vector"
 #include <raylib.h>
 #include <raymath.h>
-#include "CircularBuffer.h"
-#include "Executor.h"
+//#include "CircularBuffer.h"
+//#include "Executor.h"
 #include "FPSRules.h"
 
 #endif
@@ -60,7 +60,7 @@ public:
     void setGrounded(bool temp);
     bool getGrounded();
     Vector3 getVelocity();
-    vector<Bullet>* getEntities();
+//    vector<Bullet>* getEntities();
     Vector3 getPosition();
     void startJumpTimer(float dt);
     float getJumpTimer();
@@ -84,7 +84,7 @@ private:
     bool grounded = false;
     BoundingBox playerBox{};
     float coolDown = 0;
-    vector<Bullet> entities = {};
+//    vector<Bullet> entities = {};
     Camera3D camera{};
     Vector3 position{};
     Vector3 velocity{};

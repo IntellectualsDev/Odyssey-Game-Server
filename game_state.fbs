@@ -19,14 +19,24 @@ struct BoundingBox {
 
 //TODO: define a Raylib Model in the future (many dependencies need to be defined)
 
-// Define the enums
+// Define the enums. ALL RELIABLE except for Input & DifferentialState, ad GlobalState
 enum PacketType : byte {
+    // Client --> Server
+    CreateLobby,
     Join,
+    Start,
     Input,
     Leave,
+    CreateLobbyResult,
+
+    //Server --> Client
+    StartResult,
     JoinResult,
-    GlobalState,
-    Timeout
+    LeaveResult,
+    GlobalState, //TODO: send global snapshot every so often
+    DifferentialState, // TODO: portions of this will be null (so not sent/encoded)
+    Timeout,
+    Revert, //TODO: If there is packet loss, send this packet with the last ack'ed (full state) so client can revert back to this state
 }
 
 struct Endpoint {
@@ -99,11 +109,12 @@ union PacketPayload {
     GlobalState,
 }
 
-table Packet {
+table OutputPacket {
     packet_type: PacketType;
     endpoint: Endpoint;
+    reliable: bool; //TODO: find a way to keep this out of the buffer (but have a way for the transmitter to check if it is reliable)
     tick: Tick;
     payload: PacketPayload;
 }
 
-root_type Packet;
+root_type OutputPacket;
