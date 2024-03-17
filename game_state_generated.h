@@ -13,9 +13,16 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
               FLATBUFFERS_VERSION_REVISION == 7,
              "Non-compatible flatbuffers version included");
 
+struct Vector3;
+
+struct BoundingBox;
+
 struct Endpoint;
 
 struct Tick;
+
+struct Camera3D;
+struct Camera3DBuilder;
 
 struct Entity;
 struct EntityBuilder;
@@ -112,6 +119,58 @@ template<> struct PacketPayloadTraits<GlobalState> {
 bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type);
 bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
 
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vector3 FLATBUFFERS_FINAL_CLASS {
+ private:
+  float x_;
+  float y_;
+  float z_;
+
+ public:
+  Vector3()
+      : x_(0),
+        y_(0),
+        z_(0) {
+  }
+  Vector3(float _x, float _y, float _z)
+      : x_(::flatbuffers::EndianScalar(_x)),
+        y_(::flatbuffers::EndianScalar(_y)),
+        z_(::flatbuffers::EndianScalar(_z)) {
+  }
+  float x() const {
+    return ::flatbuffers::EndianScalar(x_);
+  }
+  float y() const {
+    return ::flatbuffers::EndianScalar(y_);
+  }
+  float z() const {
+    return ::flatbuffers::EndianScalar(z_);
+  }
+};
+FLATBUFFERS_STRUCT_END(Vector3, 12);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) BoundingBox FLATBUFFERS_FINAL_CLASS {
+ private:
+  Vector3 min_;
+  Vector3 max_;
+
+ public:
+  BoundingBox()
+      : min_(),
+        max_() {
+  }
+  BoundingBox(const Vector3 &_min, const Vector3 &_max)
+      : min_(_min),
+        max_(_max) {
+  }
+  const Vector3 &min() const {
+    return min_;
+  }
+  const Vector3 &max() const {
+    return max_;
+  }
+};
+FLATBUFFERS_STRUCT_END(BoundingBox, 24);
+
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Endpoint FLATBUFFERS_FINAL_CLASS {
  private:
   uint32_t address_;
@@ -158,21 +217,96 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Tick FLATBUFFERS_FINAL_CLASS {
 };
 FLATBUFFERS_STRUCT_END(Tick, 8);
 
+struct Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef Camera3DBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_POSITION = 4,
+    VT_TARGET = 6,
+    VT_UP = 8,
+    VT_FOVY = 10,
+    VT_PROJECTION = 12
+  };
+  const Vector3 *position() const {
+    return GetStruct<const Vector3 *>(VT_POSITION);
+  }
+  const Vector3 *target() const {
+    return GetStruct<const Vector3 *>(VT_TARGET);
+  }
+  const Vector3 *up() const {
+    return GetStruct<const Vector3 *>(VT_UP);
+  }
+  float fovy() const {
+    return GetField<float>(VT_FOVY, 0.0f);
+  }
+  int32_t projection() const {
+    return GetField<int32_t>(VT_PROJECTION, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<Vector3>(verifier, VT_POSITION, 4) &&
+           VerifyField<Vector3>(verifier, VT_TARGET, 4) &&
+           VerifyField<Vector3>(verifier, VT_UP, 4) &&
+           VerifyField<float>(verifier, VT_FOVY, 4) &&
+           VerifyField<int32_t>(verifier, VT_PROJECTION, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct Camera3DBuilder {
+  typedef Camera3D Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_position(const Vector3 *position) {
+    fbb_.AddStruct(Camera3D::VT_POSITION, position);
+  }
+  void add_target(const Vector3 *target) {
+    fbb_.AddStruct(Camera3D::VT_TARGET, target);
+  }
+  void add_up(const Vector3 *up) {
+    fbb_.AddStruct(Camera3D::VT_UP, up);
+  }
+  void add_fovy(float fovy) {
+    fbb_.AddElement<float>(Camera3D::VT_FOVY, fovy, 0.0f);
+  }
+  void add_projection(int32_t projection) {
+    fbb_.AddElement<int32_t>(Camera3D::VT_PROJECTION, projection, 0);
+  }
+  explicit Camera3DBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Camera3D> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Camera3D>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Camera3D> CreateCamera3D(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const Vector3 *position = nullptr,
+    const Vector3 *target = nullptr,
+    const Vector3 *up = nullptr,
+    float fovy = 0.0f,
+    int32_t projection = 0) {
+  Camera3DBuilder builder_(_fbb);
+  builder_.add_projection(projection);
+  builder_.add_fovy(fovy);
+  builder_.add_up(up);
+  builder_.add_target(target);
+  builder_.add_position(position);
+  return builder_.Finish();
+}
+
 struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef EntityBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ENTITY_ID = 4,
     VT_ENTITY_LABEL = 6,
-    VT_XPOS = 8,
-    VT_YPOS = 10,
-    VT_ZPOS = 12,
-    VT_XFACING = 14,
-    VT_YFACING = 16,
-    VT_ZFACING = 18,
-    VT_XVELOCITY = 20,
-    VT_YVELOCITY = 22,
-    VT_ZVELOCITY = 24,
-    VT_ALIVE = 26
+    VT_POSITION = 8,
+    VT_FACING = 10,
+    VT_VELOCITY = 12,
+    VT_ALIVE = 14
   };
   uint32_t entity_id() const {
     return GetField<uint32_t>(VT_ENTITY_ID, 0);
@@ -180,32 +314,14 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::String *entity_label() const {
     return GetPointer<const ::flatbuffers::String *>(VT_ENTITY_LABEL);
   }
-  float xpos() const {
-    return GetField<float>(VT_XPOS, 0.0f);
+  const Vector3 *position() const {
+    return GetStruct<const Vector3 *>(VT_POSITION);
   }
-  float ypos() const {
-    return GetField<float>(VT_YPOS, 0.0f);
+  const Vector3 *facing() const {
+    return GetStruct<const Vector3 *>(VT_FACING);
   }
-  float zpos() const {
-    return GetField<float>(VT_ZPOS, 0.0f);
-  }
-  float xfacing() const {
-    return GetField<float>(VT_XFACING, 0.0f);
-  }
-  float yfacing() const {
-    return GetField<float>(VT_YFACING, 0.0f);
-  }
-  float zfacing() const {
-    return GetField<float>(VT_ZFACING, 0.0f);
-  }
-  float xvelocity() const {
-    return GetField<float>(VT_XVELOCITY, 0.0f);
-  }
-  float yvelocity() const {
-    return GetField<float>(VT_YVELOCITY, 0.0f);
-  }
-  float zvelocity() const {
-    return GetField<float>(VT_ZVELOCITY, 0.0f);
+  const Vector3 *velocity() const {
+    return GetStruct<const Vector3 *>(VT_VELOCITY);
   }
   bool alive() const {
     return GetField<uint8_t>(VT_ALIVE, 0) != 0;
@@ -215,15 +331,9 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint32_t>(verifier, VT_ENTITY_ID, 4) &&
            VerifyOffset(verifier, VT_ENTITY_LABEL) &&
            verifier.VerifyString(entity_label()) &&
-           VerifyField<float>(verifier, VT_XPOS, 4) &&
-           VerifyField<float>(verifier, VT_YPOS, 4) &&
-           VerifyField<float>(verifier, VT_ZPOS, 4) &&
-           VerifyField<float>(verifier, VT_XFACING, 4) &&
-           VerifyField<float>(verifier, VT_YFACING, 4) &&
-           VerifyField<float>(verifier, VT_ZFACING, 4) &&
-           VerifyField<float>(verifier, VT_XVELOCITY, 4) &&
-           VerifyField<float>(verifier, VT_YVELOCITY, 4) &&
-           VerifyField<float>(verifier, VT_ZVELOCITY, 4) &&
+           VerifyField<Vector3>(verifier, VT_POSITION, 4) &&
+           VerifyField<Vector3>(verifier, VT_FACING, 4) &&
+           VerifyField<Vector3>(verifier, VT_VELOCITY, 4) &&
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
            verifier.EndTable();
   }
@@ -239,32 +349,14 @@ struct EntityBuilder {
   void add_entity_label(::flatbuffers::Offset<::flatbuffers::String> entity_label) {
     fbb_.AddOffset(Entity::VT_ENTITY_LABEL, entity_label);
   }
-  void add_xpos(float xpos) {
-    fbb_.AddElement<float>(Entity::VT_XPOS, xpos, 0.0f);
+  void add_position(const Vector3 *position) {
+    fbb_.AddStruct(Entity::VT_POSITION, position);
   }
-  void add_ypos(float ypos) {
-    fbb_.AddElement<float>(Entity::VT_YPOS, ypos, 0.0f);
+  void add_facing(const Vector3 *facing) {
+    fbb_.AddStruct(Entity::VT_FACING, facing);
   }
-  void add_zpos(float zpos) {
-    fbb_.AddElement<float>(Entity::VT_ZPOS, zpos, 0.0f);
-  }
-  void add_xfacing(float xfacing) {
-    fbb_.AddElement<float>(Entity::VT_XFACING, xfacing, 0.0f);
-  }
-  void add_yfacing(float yfacing) {
-    fbb_.AddElement<float>(Entity::VT_YFACING, yfacing, 0.0f);
-  }
-  void add_zfacing(float zfacing) {
-    fbb_.AddElement<float>(Entity::VT_ZFACING, zfacing, 0.0f);
-  }
-  void add_xvelocity(float xvelocity) {
-    fbb_.AddElement<float>(Entity::VT_XVELOCITY, xvelocity, 0.0f);
-  }
-  void add_yvelocity(float yvelocity) {
-    fbb_.AddElement<float>(Entity::VT_YVELOCITY, yvelocity, 0.0f);
-  }
-  void add_zvelocity(float zvelocity) {
-    fbb_.AddElement<float>(Entity::VT_ZVELOCITY, zvelocity, 0.0f);
+  void add_velocity(const Vector3 *velocity) {
+    fbb_.AddStruct(Entity::VT_VELOCITY, velocity);
   }
   void add_alive(bool alive) {
     fbb_.AddElement<uint8_t>(Entity::VT_ALIVE, static_cast<uint8_t>(alive), 0);
@@ -284,26 +376,14 @@ inline ::flatbuffers::Offset<Entity> CreateEntity(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t entity_id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> entity_label = 0,
-    float xpos = 0.0f,
-    float ypos = 0.0f,
-    float zpos = 0.0f,
-    float xfacing = 0.0f,
-    float yfacing = 0.0f,
-    float zfacing = 0.0f,
-    float xvelocity = 0.0f,
-    float yvelocity = 0.0f,
-    float zvelocity = 0.0f,
+    const Vector3 *position = nullptr,
+    const Vector3 *facing = nullptr,
+    const Vector3 *velocity = nullptr,
     bool alive = false) {
   EntityBuilder builder_(_fbb);
-  builder_.add_zvelocity(zvelocity);
-  builder_.add_yvelocity(yvelocity);
-  builder_.add_xvelocity(xvelocity);
-  builder_.add_zfacing(zfacing);
-  builder_.add_yfacing(yfacing);
-  builder_.add_xfacing(xfacing);
-  builder_.add_zpos(zpos);
-  builder_.add_ypos(ypos);
-  builder_.add_xpos(xpos);
+  builder_.add_velocity(velocity);
+  builder_.add_facing(facing);
+  builder_.add_position(position);
   builder_.add_entity_label(entity_label);
   builder_.add_entity_id(entity_id);
   builder_.add_alive(alive);
@@ -314,30 +394,18 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t entity_id = 0,
     const char *entity_label = nullptr,
-    float xpos = 0.0f,
-    float ypos = 0.0f,
-    float zpos = 0.0f,
-    float xfacing = 0.0f,
-    float yfacing = 0.0f,
-    float zfacing = 0.0f,
-    float xvelocity = 0.0f,
-    float yvelocity = 0.0f,
-    float zvelocity = 0.0f,
+    const Vector3 *position = nullptr,
+    const Vector3 *facing = nullptr,
+    const Vector3 *velocity = nullptr,
     bool alive = false) {
   auto entity_label__ = entity_label ? _fbb.CreateString(entity_label) : 0;
   return CreateEntity(
       _fbb,
       entity_id,
       entity_label__,
-      xpos,
-      ypos,
-      zpos,
-      xfacing,
-      yfacing,
-      zfacing,
-      xvelocity,
-      yvelocity,
-      zvelocity,
+      position,
+      facing,
+      velocity,
       alive);
 }
 
@@ -352,16 +420,10 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_CROUCH = 14,
     VT_GROUNDED = 16,
     VT_COOLDOWN = 18,
-    VT_XPOS = 20,
-    VT_YPOS = 22,
-    VT_ZPOS = 24,
-    VT_XFACING = 26,
-    VT_YFACING = 28,
-    VT_ZFACING = 30,
-    VT_XVELOCITY = 32,
-    VT_YVELOCITY = 34,
-    VT_ZVELOCITY = 36,
-    VT_ENTITIES = 38
+    VT_POSITION = 20,
+    VT_FACING = 22,
+    VT_VELOCITY = 24,
+    VT_ENTITIES = 26
   };
   const Endpoint *endpoint() const {
     return GetStruct<const Endpoint *>(VT_ENDPOINT);
@@ -387,32 +449,14 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   float cooldown() const {
     return GetField<float>(VT_COOLDOWN, 0.0f);
   }
-  float xpos() const {
-    return GetField<float>(VT_XPOS, 0.0f);
+  const Vector3 *position() const {
+    return GetStruct<const Vector3 *>(VT_POSITION);
   }
-  float ypos() const {
-    return GetField<float>(VT_YPOS, 0.0f);
+  const Vector3 *facing() const {
+    return GetStruct<const Vector3 *>(VT_FACING);
   }
-  float zpos() const {
-    return GetField<float>(VT_ZPOS, 0.0f);
-  }
-  float xfacing() const {
-    return GetField<float>(VT_XFACING, 0.0f);
-  }
-  float yfacing() const {
-    return GetField<float>(VT_YFACING, 0.0f);
-  }
-  float zfacing() const {
-    return GetField<float>(VT_ZFACING, 0.0f);
-  }
-  float xvelocity() const {
-    return GetField<float>(VT_XVELOCITY, 0.0f);
-  }
-  float yvelocity() const {
-    return GetField<float>(VT_YVELOCITY, 0.0f);
-  }
-  float zvelocity() const {
-    return GetField<float>(VT_ZVELOCITY, 0.0f);
+  const Vector3 *velocity() const {
+    return GetStruct<const Vector3 *>(VT_VELOCITY);
   }
   const ::flatbuffers::Vector<::flatbuffers::Offset<Entity>> *entities() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Entity>> *>(VT_ENTITIES);
@@ -427,15 +471,9 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_CROUCH, 1) &&
            VerifyField<uint8_t>(verifier, VT_GROUNDED, 1) &&
            VerifyField<float>(verifier, VT_COOLDOWN, 4) &&
-           VerifyField<float>(verifier, VT_XPOS, 4) &&
-           VerifyField<float>(verifier, VT_YPOS, 4) &&
-           VerifyField<float>(verifier, VT_ZPOS, 4) &&
-           VerifyField<float>(verifier, VT_XFACING, 4) &&
-           VerifyField<float>(verifier, VT_YFACING, 4) &&
-           VerifyField<float>(verifier, VT_ZFACING, 4) &&
-           VerifyField<float>(verifier, VT_XVELOCITY, 4) &&
-           VerifyField<float>(verifier, VT_YVELOCITY, 4) &&
-           VerifyField<float>(verifier, VT_ZVELOCITY, 4) &&
+           VerifyField<Vector3>(verifier, VT_POSITION, 4) &&
+           VerifyField<Vector3>(verifier, VT_FACING, 4) &&
+           VerifyField<Vector3>(verifier, VT_VELOCITY, 4) &&
            VerifyOffset(verifier, VT_ENTITIES) &&
            verifier.VerifyVector(entities()) &&
            verifier.VerifyVectorOfTables(entities()) &&
@@ -471,32 +509,14 @@ struct ClientBuilder {
   void add_cooldown(float cooldown) {
     fbb_.AddElement<float>(Client::VT_COOLDOWN, cooldown, 0.0f);
   }
-  void add_xpos(float xpos) {
-    fbb_.AddElement<float>(Client::VT_XPOS, xpos, 0.0f);
+  void add_position(const Vector3 *position) {
+    fbb_.AddStruct(Client::VT_POSITION, position);
   }
-  void add_ypos(float ypos) {
-    fbb_.AddElement<float>(Client::VT_YPOS, ypos, 0.0f);
+  void add_facing(const Vector3 *facing) {
+    fbb_.AddStruct(Client::VT_FACING, facing);
   }
-  void add_zpos(float zpos) {
-    fbb_.AddElement<float>(Client::VT_ZPOS, zpos, 0.0f);
-  }
-  void add_xfacing(float xfacing) {
-    fbb_.AddElement<float>(Client::VT_XFACING, xfacing, 0.0f);
-  }
-  void add_yfacing(float yfacing) {
-    fbb_.AddElement<float>(Client::VT_YFACING, yfacing, 0.0f);
-  }
-  void add_zfacing(float zfacing) {
-    fbb_.AddElement<float>(Client::VT_ZFACING, zfacing, 0.0f);
-  }
-  void add_xvelocity(float xvelocity) {
-    fbb_.AddElement<float>(Client::VT_XVELOCITY, xvelocity, 0.0f);
-  }
-  void add_yvelocity(float yvelocity) {
-    fbb_.AddElement<float>(Client::VT_YVELOCITY, yvelocity, 0.0f);
-  }
-  void add_zvelocity(float zvelocity) {
-    fbb_.AddElement<float>(Client::VT_ZVELOCITY, zvelocity, 0.0f);
+  void add_velocity(const Vector3 *velocity) {
+    fbb_.AddStruct(Client::VT_VELOCITY, velocity);
   }
   void add_entities(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Entity>>> entities) {
     fbb_.AddOffset(Client::VT_ENTITIES, entities);
@@ -522,27 +542,15 @@ inline ::flatbuffers::Offset<Client> CreateClient(
     bool crouch = false,
     bool grounded = false,
     float cooldown = 0.0f,
-    float xpos = 0.0f,
-    float ypos = 0.0f,
-    float zpos = 0.0f,
-    float xfacing = 0.0f,
-    float yfacing = 0.0f,
-    float zfacing = 0.0f,
-    float xvelocity = 0.0f,
-    float yvelocity = 0.0f,
-    float zvelocity = 0.0f,
+    const Vector3 *position = nullptr,
+    const Vector3 *facing = nullptr,
+    const Vector3 *velocity = nullptr,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Entity>>> entities = 0) {
   ClientBuilder builder_(_fbb);
   builder_.add_entities(entities);
-  builder_.add_zvelocity(zvelocity);
-  builder_.add_yvelocity(yvelocity);
-  builder_.add_xvelocity(xvelocity);
-  builder_.add_zfacing(zfacing);
-  builder_.add_yfacing(yfacing);
-  builder_.add_xfacing(xfacing);
-  builder_.add_zpos(zpos);
-  builder_.add_ypos(ypos);
-  builder_.add_xpos(xpos);
+  builder_.add_velocity(velocity);
+  builder_.add_facing(facing);
+  builder_.add_position(position);
   builder_.add_cooldown(cooldown);
   builder_.add_client_uid(client_uid);
   builder_.add_tick(tick);
@@ -564,15 +572,9 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
     bool crouch = false,
     bool grounded = false,
     float cooldown = 0.0f,
-    float xpos = 0.0f,
-    float ypos = 0.0f,
-    float zpos = 0.0f,
-    float xfacing = 0.0f,
-    float yfacing = 0.0f,
-    float zfacing = 0.0f,
-    float xvelocity = 0.0f,
-    float yvelocity = 0.0f,
-    float zvelocity = 0.0f,
+    const Vector3 *position = nullptr,
+    const Vector3 *facing = nullptr,
+    const Vector3 *velocity = nullptr,
     const std::vector<::flatbuffers::Offset<Entity>> *entities = nullptr) {
   auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<Entity>>(*entities) : 0;
   return CreateClient(
@@ -585,15 +587,9 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
       crouch,
       grounded,
       cooldown,
-      xpos,
-      ypos,
-      zpos,
-      xfacing,
-      yfacing,
-      zfacing,
-      xvelocity,
-      yvelocity,
-      zvelocity,
+      position,
+      facing,
+      velocity,
       entities__);
 }
 
