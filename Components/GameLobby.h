@@ -11,6 +11,12 @@
 #include <mutex>
 #include <condition_variable>
 
+// Acts as the communication label for a client
+struct IPEndpoint {
+    enet_uint32 host;
+    enet_uint16 port;
+};
+
 
 using namespace std;
 
@@ -41,6 +47,8 @@ private:
     const float tickRate = 60.0f;
 //    const float secondPerTick = 1.0f / tickRate;
     std::chrono::steady_clock::time_point lastTick;
+
+
 
     mutex& consoleMutex;
 };

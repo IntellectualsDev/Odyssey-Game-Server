@@ -3,6 +3,7 @@
 //
 
 #include "GameLobby.h"
+#include "../game_state_generated.h"
 
 GameLobby::GameLobby(PartitionedPacketBuffer &receiveBuffer, PacketBuffer &outputBuffer, mutex& consoleMutex) : LobbyServices(receiveBuffer, outputBuffer), consoleMutex(consoleMutex) {
     // Create a receive buffer partition
@@ -35,8 +36,6 @@ void GameLobby::run() {
 //    auto lastTick = std::chrono::steady_clock::now();
     const auto secondsPerTick = std::chrono::duration<float>(1.0f / tickRate);
 
-//    auto nextTick = lastTick + secondPerTick;
-
     while(!stopFlag.load()){
         auto tickStartTime = std::chrono::steady_clock::now();
         auto nextTick = tickStartTime + secondsPerTick;
@@ -55,7 +54,7 @@ void GameLobby::run() {
                 }
 //                processPacket(std::move(packet)); // TODO: this will update the global game state
             } else{
-                break; // no more packets left
+                continue; // no more packets left
             }
         }
 

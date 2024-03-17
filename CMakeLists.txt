@@ -6,8 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 # Add the path to ENet header files, an explicit path to the .h files is not required, CMake will find them
 include_directories(/usr/local/include)
 
+include_directories("/Users/anshulgowda/Documents/CODE/Odyssey/Odyssey-Game-Server/Development Env/flatbuffers/include")
+
 # Add the path to ENet library
 link_directories(/usr/local/lib)
+
+link_directories(/usr/local/bin)
+
+
 
 add_executable(Odyssey_Game_Server main.cpp
         Servers/GameServer.h
@@ -32,6 +38,8 @@ add_executable(Odyssey_Game_Server main.cpp
         Buffers/CircularBuffer.h
         Components/GameLobby.cpp
         Components/GameLobby.h
+        Buffers/LIFOCircularBuffer.cpp
+        Buffers/LIFOCircularBuffer.h
 )
     # TODO: Don't forget to add the encryption files when completed
 

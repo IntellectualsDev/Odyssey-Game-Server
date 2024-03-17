@@ -3,6 +3,7 @@
 
 #include "Buffers/PartitionedPacketBuffer.h"
 #include "Buffers/PacketBuffer.h"
+#include "Buffers/LIFOCircularBuffer.h"
 #include "Components/GameLobby.h"
 
 #include <mutex>
@@ -59,31 +60,35 @@ int main() {
     }
     atexit (enet_deinitialize);
 
-    const size_t bufferSize = 100;
-    const size_t numPartitions = 3;
-    PartitionedPacketBuffer receiveBuffer(numPartitions, bufferSize, consoleMutex);
-    PacketBuffer outputBuffer;
+//    ______________________________________________________________________________________________
+//
+//    const size_t bufferSize = 100;
+//    const size_t numPartitions = 3;
+//    PartitionedPacketBuffer receiveBuffer(numPartitions, bufferSize, consoleMutex);
+//    PacketBuffer outputBuffer;
+//
+//    GameLobby lobby(receiveBuffer, outputBuffer, consoleMutex);
+//    auto partitionIndex = lobby.getPartitionIndex();
+//
+////    auto partition1 = receiveBuffer.allocatePartition().value_or(-1);
+//
+//    if (partitionIndex == -1) {
+//        std::cerr << "Failed to allocate partition" << std::endl;
+//        return EXIT_FAILURE;
+//    }
+//
+//    lobby.start();
+//
+//    // Start producer to simulate packet creation
+//    std::thread producerThread(producer, std::ref(receiveBuffer), partitionIndex, 1, 50);
+//    std::this_thread::sleep_for(std::chrono::seconds(5));
+//    producerThread.join();
+//    std::this_thread::sleep_for(std::chrono::seconds(5)); // Give some time for processing
+//    lobby.stop();
+//
+//    return 0;
 
-    GameLobby lobby(receiveBuffer, outputBuffer, consoleMutex);
-    auto partitionIndex = lobby.getPartitionIndex();
-
-//    auto partition1 = receiveBuffer.allocatePartition().value_or(-1);
-
-    if (partitionIndex == -1) {
-        std::cerr << "Failed to allocate partition" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    lobby.start();
-
-    // Start producer to simulate packet creation
-    std::thread producerThread(producer, std::ref(receiveBuffer), partitionIndex, 1, 50);
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    producerThread.join();
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // Give some time for processing
-    lobby.stop();
-
-    return 0;
+//    ______________________________________________________________________________________________
 //    auto partition2 = buffer.allocatePartition().value_or(-1);
 
 //    if(partition1 == -1 || partition1 == -1) {

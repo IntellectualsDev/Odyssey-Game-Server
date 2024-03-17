@@ -4,6 +4,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 EXPOSE 7777/udp
 
+#TODO: Include layer for Google's FlatBuffer
+    # source: git clone https://github.com/google/flatbuffers.git
+    # within "FlatBuffers" dir, "cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ." (for Mac) find Linux version
+    # compile FlatBuffers, using "make"
+    # OPTIONAL TEST RUN: "./flattests"
+    # move flatc exec to usr/local/ (also contains cmake) "sudo mv flatc /usr/local/"
+
+
 #Install the dependencies required for the build
     # build-essential (GNU Compiler)
     # libstdc++-11-dev (C++ std libraries)

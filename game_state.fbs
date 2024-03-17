@@ -1,0 +1,77 @@
+// Define the enums
+enum PacketType : byte {
+    Join,
+    Input,
+    Leave,
+    JoinResult,
+    GlobalState,
+    Timeout
+}
+
+struct Endpoint {
+    address: uint;
+    port: uint;
+}
+
+// for both the client and server
+struct Tick{
+    tick_number: uint;
+    tick_rate: float;
+}
+
+// Define the contents of an Entity
+
+table Entity {
+    entity_id: uint;
+    entity_label: string;
+    xpos: float;
+    ypos: float;
+    zpos: float;
+    xfacing: float;
+    yfacing: float;
+    zfacing: float;
+    xvelocity: float;
+    yvelocity: float;
+    zvelocity: float;
+    alive: bool;
+}
+
+// Define the state of a Client
+table Client {
+    endpoint: Endpoint;
+    tick: Tick;
+    client_uid: uint;
+    alive: bool;
+    sprint: bool;
+    crouch: bool;
+    grounded: bool;
+    cooldown: float;
+    xpos: float;
+    ypos: float;
+    zpos: float;
+    xfacing: float;
+    yfacing: float;
+    zfacing: float;
+    xvelocity: float;
+    yvelocity: float;
+    zvelocity: float;
+
+    entities:[Entity];
+}
+
+table GlobalState {
+    client_state:[Client];
+}
+
+union PacketPayload {
+    GlobalState,
+}
+
+table Packet {
+    packet_type: PacketType;
+    endpoint: Endpoint;
+    tick: Tick;
+    payload: PacketPayload;
+}
+
+root_type Packet;
