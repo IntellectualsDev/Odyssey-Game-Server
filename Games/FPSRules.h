@@ -24,24 +24,24 @@ struct FPSEntityState {
 };
 
 struct FPSClientState {
-    Quaternion cameraRotation{};
+    float dt{};
     Vector3 separationVector{};
     bool topCollision = false;
-//    bool colliding{};
-    float Gravity = -0.05;
-    float Jump = 0.8f;
+//TODO: make these constants
+//    float Gravity = -0.05;
+//    float Jump = 0.8f;
     bool grounded = false;
+    bool space;
     BoundingBox playerBox{};
+    Vector3 hitBox{};
     float coolDown = 0;
     vector<FPSEntityState> entities = {};
     Camera3D camera = {0};
     Vector3 position = (Vector3){0,2,1};
     Vector3 velocity = (Vector3){0,0,0};
-    Vector3 hitbox = (Vector3){1.0f,2.0f,1.0f};
+//    Vector3 hitbox = (Vector3){1.0f,2.0f,1.0f};
     bool alive = true;
     int cameraMode = CAMERA_FIRST_PERSON;
-    float JumpTimer = 0.0f;
 };
-
 
 #endif //ODYSSEY_GAME_SERVER_FPSRULES_H

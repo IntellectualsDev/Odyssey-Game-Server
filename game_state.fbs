@@ -37,7 +37,7 @@ struct Endpoint {
 // for both the client and server
 struct Tick{
     tick_number: uint;
-    tick_rate: float;
+    dt: float;
 }
 
 table Camera3D {
@@ -65,7 +65,7 @@ table Client {
     client_uid: uint;
     alive: bool;
     sprint: bool;
-    crouch: bool;
+   // crouch: bool;
     grounded: bool;
     cooldown: float;
     position: Vector3;

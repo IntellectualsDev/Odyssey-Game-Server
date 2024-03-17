@@ -58,6 +58,9 @@ add_executable(Odyssey_Game_Server main.cpp
         Buffers/LIFOCircularBuffer.cpp
         Buffers/LIFOCircularBuffer.h
         Games/FPSRules.h
+        Games/Player.cpp
+        Games/Player.cpp
+        Games/Player.h
 )
     # TODO: Don't forget to add the encryption files when completed
 
