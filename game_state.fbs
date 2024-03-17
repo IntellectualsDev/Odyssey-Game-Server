@@ -6,6 +6,11 @@ struct Vector3 {
     z: float;
 }
 
+struct Vector2 {
+    x: float;
+    y: float;
+}
+
 // defined to mirror RayLib's BoundingBox def
 struct BoundingBox {
     min: Vector3;
@@ -70,11 +75,27 @@ table Client {
     entities:[Entity];
 }
 
+table Input {
+    w: bool;
+    a: bool;
+    s: bool;
+    d: bool;
+    mouse_delta: Vector2;
+    shoot: bool;
+    space: bool;
+    dt: float;
+    previous_position: Vector3;
+    sprint: bool;
+    crouch: bool;
+    //implement future support for sliding
+}
+
 table GlobalState {
     client_state:[Client];
 }
 
 union PacketPayload {
+    Input,
     GlobalState,
 }
 

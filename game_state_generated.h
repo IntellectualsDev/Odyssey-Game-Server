@@ -15,6 +15,8 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
 
 struct Vector3;
 
+struct Vector2;
+
 struct BoundingBox;
 
 struct Endpoint;
@@ -23,18 +25,27 @@ struct Tick;
 
 struct Camera3D;
 struct Camera3DBuilder;
+struct Camera3DT;
 
 struct Entity;
 struct EntityBuilder;
+struct EntityT;
 
 struct Client;
 struct ClientBuilder;
+struct ClientT;
+
+struct Input;
+struct InputBuilder;
+struct InputT;
 
 struct GlobalState;
 struct GlobalStateBuilder;
+struct GlobalStateT;
 
 struct Packet;
 struct PacketBuilder;
+struct PacketT;
 
 enum PacketType : int8_t {
   PacketType_Join = 0,
@@ -80,22 +91,25 @@ inline const char *EnumNamePacketType(PacketType e) {
 
 enum PacketPayload : uint8_t {
   PacketPayload_NONE = 0,
-  PacketPayload_GlobalState = 1,
+  PacketPayload_Input = 1,
+  PacketPayload_GlobalState = 2,
   PacketPayload_MIN = PacketPayload_NONE,
   PacketPayload_MAX = PacketPayload_GlobalState
 };
 
-inline const PacketPayload (&EnumValuesPacketPayload())[2] {
+inline const PacketPayload (&EnumValuesPacketPayload())[3] {
   static const PacketPayload values[] = {
     PacketPayload_NONE,
+    PacketPayload_Input,
     PacketPayload_GlobalState
   };
   return values;
 }
 
 inline const char * const *EnumNamesPacketPayload() {
-  static const char * const names[3] = {
+  static const char * const names[4] = {
     "NONE",
+    "Input",
     "GlobalState",
     nullptr
   };
@@ -112,8 +126,72 @@ template<typename T> struct PacketPayloadTraits {
   static const PacketPayload enum_value = PacketPayload_NONE;
 };
 
+template<> struct PacketPayloadTraits<Input> {
+  static const PacketPayload enum_value = PacketPayload_Input;
+};
+
 template<> struct PacketPayloadTraits<GlobalState> {
   static const PacketPayload enum_value = PacketPayload_GlobalState;
+};
+
+template<typename T> struct PacketPayloadUnionTraits {
+  static const PacketPayload enum_value = PacketPayload_NONE;
+};
+
+template<> struct PacketPayloadUnionTraits<InputT> {
+  static const PacketPayload enum_value = PacketPayload_Input;
+};
+
+template<> struct PacketPayloadUnionTraits<GlobalStateT> {
+  static const PacketPayload enum_value = PacketPayload_GlobalState;
+};
+
+struct PacketPayloadUnion {
+  PacketPayload type;
+  void *value;
+
+  PacketPayloadUnion() : type(PacketPayload_NONE), value(nullptr) {}
+  PacketPayloadUnion(PacketPayloadUnion&& u) FLATBUFFERS_NOEXCEPT :
+    type(PacketPayload_NONE), value(nullptr)
+    { std::swap(type, u.type); std::swap(value, u.value); }
+  PacketPayloadUnion(const PacketPayloadUnion &);
+  PacketPayloadUnion &operator=(const PacketPayloadUnion &u)
+    { PacketPayloadUnion t(u); std::swap(type, t.type); std::swap(value, t.value); return *this; }
+  PacketPayloadUnion &operator=(PacketPayloadUnion &&u) FLATBUFFERS_NOEXCEPT
+    { std::swap(type, u.type); std::swap(value, u.value); return *this; }
+  ~PacketPayloadUnion() { Reset(); }
+
+  void Reset();
+
+  template <typename T>
+  void Set(T&& val) {
+    typedef typename std::remove_reference<T>::type RT;
+    Reset();
+    type = PacketPayloadUnionTraits<RT>::enum_value;
+    if (type != PacketPayload_NONE) {
+      value = new RT(std::forward<T>(val));
+    }
+  }
+
+  static void *UnPack(const void *obj, PacketPayload type, const ::flatbuffers::resolver_function_t *resolver);
+  ::flatbuffers::Offset<void> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr) const;
+
+  InputT *AsInput() {
+    return type == PacketPayload_Input ?
+      reinterpret_cast<InputT *>(value) : nullptr;
+  }
+  const InputT *AsInput() const {
+    return type == PacketPayload_Input ?
+      reinterpret_cast<const InputT *>(value) : nullptr;
+  }
+  GlobalStateT *AsGlobalState() {
+    return type == PacketPayload_GlobalState ?
+      reinterpret_cast<GlobalStateT *>(value) : nullptr;
+  }
+  const GlobalStateT *AsGlobalState() const {
+    return type == PacketPayload_GlobalState ?
+      reinterpret_cast<const GlobalStateT *>(value) : nullptr;
+  }
 };
 
 bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type);
@@ -147,6 +225,29 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vector3 FLATBUFFERS_FINAL_CLASS {
   }
 };
 FLATBUFFERS_STRUCT_END(Vector3, 12);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vector2 FLATBUFFERS_FINAL_CLASS {
+ private:
+  float x_;
+  float y_;
+
+ public:
+  Vector2()
+      : x_(0),
+        y_(0) {
+  }
+  Vector2(float _x, float _y)
+      : x_(::flatbuffers::EndianScalar(_x)),
+        y_(::flatbuffers::EndianScalar(_y)) {
+  }
+  float x() const {
+    return ::flatbuffers::EndianScalar(x_);
+  }
+  float y() const {
+    return ::flatbuffers::EndianScalar(y_);
+  }
+};
+FLATBUFFERS_STRUCT_END(Vector2, 8);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) BoundingBox FLATBUFFERS_FINAL_CLASS {
  private:
@@ -217,7 +318,21 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Tick FLATBUFFERS_FINAL_CLASS {
 };
 FLATBUFFERS_STRUCT_END(Tick, 8);
 
+struct Camera3DT : public ::flatbuffers::NativeTable {
+  typedef Camera3D TableType;
+  std::unique_ptr<Vector3> position{};
+  std::unique_ptr<Vector3> target{};
+  std::unique_ptr<Vector3> up{};
+  float fovy = 0.0f;
+  int32_t projection = 0;
+  Camera3DT() = default;
+  Camera3DT(const Camera3DT &o);
+  Camera3DT(Camera3DT&&) FLATBUFFERS_NOEXCEPT = default;
+  Camera3DT &operator=(Camera3DT o) FLATBUFFERS_NOEXCEPT;
+};
+
 struct Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef Camera3DT NativeTableType;
   typedef Camera3DBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_POSITION = 4,
@@ -250,6 +365,9 @@ struct Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_PROJECTION, 4) &&
            verifier.EndTable();
   }
+  Camera3DT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(Camera3DT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Camera3D> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const Camera3DT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct Camera3DBuilder {
@@ -298,7 +416,24 @@ inline ::flatbuffers::Offset<Camera3D> CreateCamera3D(
   return builder_.Finish();
 }
 
+::flatbuffers::Offset<Camera3D> CreateCamera3D(::flatbuffers::FlatBufferBuilder &_fbb, const Camera3DT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct EntityT : public ::flatbuffers::NativeTable {
+  typedef Entity TableType;
+  uint32_t entity_id = 0;
+  std::string entity_label{};
+  std::unique_ptr<Vector3> position{};
+  std::unique_ptr<Vector3> facing{};
+  std::unique_ptr<Vector3> velocity{};
+  bool alive = false;
+  EntityT() = default;
+  EntityT(const EntityT &o);
+  EntityT(EntityT&&) FLATBUFFERS_NOEXCEPT = default;
+  EntityT &operator=(EntityT o) FLATBUFFERS_NOEXCEPT;
+};
+
 struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef EntityT NativeTableType;
   typedef EntityBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ENTITY_ID = 4,
@@ -337,6 +472,9 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
            verifier.EndTable();
   }
+  EntityT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(EntityT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Entity> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const EntityT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct EntityBuilder {
@@ -409,7 +547,30 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
       alive);
 }
 
+::flatbuffers::Offset<Entity> CreateEntity(::flatbuffers::FlatBufferBuilder &_fbb, const EntityT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct ClientT : public ::flatbuffers::NativeTable {
+  typedef Client TableType;
+  std::unique_ptr<Endpoint> endpoint{};
+  std::unique_ptr<Tick> tick{};
+  uint32_t client_uid = 0;
+  bool alive = false;
+  bool sprint = false;
+  bool crouch = false;
+  bool grounded = false;
+  float cooldown = 0.0f;
+  std::unique_ptr<Vector3> position{};
+  std::unique_ptr<Vector3> facing{};
+  std::unique_ptr<Vector3> velocity{};
+  std::vector<std::unique_ptr<EntityT>> entities{};
+  ClientT() = default;
+  ClientT(const ClientT &o);
+  ClientT(ClientT&&) FLATBUFFERS_NOEXCEPT = default;
+  ClientT &operator=(ClientT o) FLATBUFFERS_NOEXCEPT;
+};
+
 struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef ClientT NativeTableType;
   typedef ClientBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ENDPOINT = 4,
@@ -479,6 +640,9 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyVectorOfTables(entities()) &&
            verifier.EndTable();
   }
+  ClientT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(ClientT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Client> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ClientT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct ClientBuilder {
@@ -593,7 +757,185 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
       entities__);
 }
 
+::flatbuffers::Offset<Client> CreateClient(::flatbuffers::FlatBufferBuilder &_fbb, const ClientT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct InputT : public ::flatbuffers::NativeTable {
+  typedef Input TableType;
+  bool w = false;
+  bool a = false;
+  bool s = false;
+  bool d = false;
+  std::unique_ptr<Vector2> mouse_delta{};
+  bool shoot = false;
+  bool space = false;
+  float dt = 0.0f;
+  std::unique_ptr<Vector3> previous_position{};
+  bool sprint = false;
+  bool crouch = false;
+  InputT() = default;
+  InputT(const InputT &o);
+  InputT(InputT&&) FLATBUFFERS_NOEXCEPT = default;
+  InputT &operator=(InputT o) FLATBUFFERS_NOEXCEPT;
+};
+
+struct Input FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef InputT NativeTableType;
+  typedef InputBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_W = 4,
+    VT_A = 6,
+    VT_S = 8,
+    VT_D = 10,
+    VT_MOUSE_DELTA = 12,
+    VT_SHOOT = 14,
+    VT_SPACE = 16,
+    VT_DT = 18,
+    VT_PREVIOUS_POSITION = 20,
+    VT_SPRINT = 22,
+    VT_CROUCH = 24
+  };
+  bool w() const {
+    return GetField<uint8_t>(VT_W, 0) != 0;
+  }
+  bool a() const {
+    return GetField<uint8_t>(VT_A, 0) != 0;
+  }
+  bool s() const {
+    return GetField<uint8_t>(VT_S, 0) != 0;
+  }
+  bool d() const {
+    return GetField<uint8_t>(VT_D, 0) != 0;
+  }
+  const Vector2 *mouse_delta() const {
+    return GetStruct<const Vector2 *>(VT_MOUSE_DELTA);
+  }
+  bool shoot() const {
+    return GetField<uint8_t>(VT_SHOOT, 0) != 0;
+  }
+  bool space() const {
+    return GetField<uint8_t>(VT_SPACE, 0) != 0;
+  }
+  float dt() const {
+    return GetField<float>(VT_DT, 0.0f);
+  }
+  const Vector3 *previous_position() const {
+    return GetStruct<const Vector3 *>(VT_PREVIOUS_POSITION);
+  }
+  bool sprint() const {
+    return GetField<uint8_t>(VT_SPRINT, 0) != 0;
+  }
+  bool crouch() const {
+    return GetField<uint8_t>(VT_CROUCH, 0) != 0;
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_W, 1) &&
+           VerifyField<uint8_t>(verifier, VT_A, 1) &&
+           VerifyField<uint8_t>(verifier, VT_S, 1) &&
+           VerifyField<uint8_t>(verifier, VT_D, 1) &&
+           VerifyField<Vector2>(verifier, VT_MOUSE_DELTA, 4) &&
+           VerifyField<uint8_t>(verifier, VT_SHOOT, 1) &&
+           VerifyField<uint8_t>(verifier, VT_SPACE, 1) &&
+           VerifyField<float>(verifier, VT_DT, 4) &&
+           VerifyField<Vector3>(verifier, VT_PREVIOUS_POSITION, 4) &&
+           VerifyField<uint8_t>(verifier, VT_SPRINT, 1) &&
+           VerifyField<uint8_t>(verifier, VT_CROUCH, 1) &&
+           verifier.EndTable();
+  }
+  InputT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(InputT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Input> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const InputT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+};
+
+struct InputBuilder {
+  typedef Input Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_w(bool w) {
+    fbb_.AddElement<uint8_t>(Input::VT_W, static_cast<uint8_t>(w), 0);
+  }
+  void add_a(bool a) {
+    fbb_.AddElement<uint8_t>(Input::VT_A, static_cast<uint8_t>(a), 0);
+  }
+  void add_s(bool s) {
+    fbb_.AddElement<uint8_t>(Input::VT_S, static_cast<uint8_t>(s), 0);
+  }
+  void add_d(bool d) {
+    fbb_.AddElement<uint8_t>(Input::VT_D, static_cast<uint8_t>(d), 0);
+  }
+  void add_mouse_delta(const Vector2 *mouse_delta) {
+    fbb_.AddStruct(Input::VT_MOUSE_DELTA, mouse_delta);
+  }
+  void add_shoot(bool shoot) {
+    fbb_.AddElement<uint8_t>(Input::VT_SHOOT, static_cast<uint8_t>(shoot), 0);
+  }
+  void add_space(bool space) {
+    fbb_.AddElement<uint8_t>(Input::VT_SPACE, static_cast<uint8_t>(space), 0);
+  }
+  void add_dt(float dt) {
+    fbb_.AddElement<float>(Input::VT_DT, dt, 0.0f);
+  }
+  void add_previous_position(const Vector3 *previous_position) {
+    fbb_.AddStruct(Input::VT_PREVIOUS_POSITION, previous_position);
+  }
+  void add_sprint(bool sprint) {
+    fbb_.AddElement<uint8_t>(Input::VT_SPRINT, static_cast<uint8_t>(sprint), 0);
+  }
+  void add_crouch(bool crouch) {
+    fbb_.AddElement<uint8_t>(Input::VT_CROUCH, static_cast<uint8_t>(crouch), 0);
+  }
+  explicit InputBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Input> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Input>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Input> CreateInput(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    bool w = false,
+    bool a = false,
+    bool s = false,
+    bool d = false,
+    const Vector2 *mouse_delta = nullptr,
+    bool shoot = false,
+    bool space = false,
+    float dt = 0.0f,
+    const Vector3 *previous_position = nullptr,
+    bool sprint = false,
+    bool crouch = false) {
+  InputBuilder builder_(_fbb);
+  builder_.add_previous_position(previous_position);
+  builder_.add_dt(dt);
+  builder_.add_mouse_delta(mouse_delta);
+  builder_.add_crouch(crouch);
+  builder_.add_sprint(sprint);
+  builder_.add_space(space);
+  builder_.add_shoot(shoot);
+  builder_.add_d(d);
+  builder_.add_s(s);
+  builder_.add_a(a);
+  builder_.add_w(w);
+  return builder_.Finish();
+}
+
+::flatbuffers::Offset<Input> CreateInput(::flatbuffers::FlatBufferBuilder &_fbb, const InputT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct GlobalStateT : public ::flatbuffers::NativeTable {
+  typedef GlobalState TableType;
+  std::vector<std::unique_ptr<ClientT>> client_state{};
+  GlobalStateT() = default;
+  GlobalStateT(const GlobalStateT &o);
+  GlobalStateT(GlobalStateT&&) FLATBUFFERS_NOEXCEPT = default;
+  GlobalStateT &operator=(GlobalStateT o) FLATBUFFERS_NOEXCEPT;
+};
+
 struct GlobalState FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef GlobalStateT NativeTableType;
   typedef GlobalStateBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_CLIENT_STATE = 4
@@ -608,6 +950,9 @@ struct GlobalState FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyVectorOfTables(client_state()) &&
            verifier.EndTable();
   }
+  GlobalStateT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(GlobalStateT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<GlobalState> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GlobalStateT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct GlobalStateBuilder {
@@ -645,7 +990,22 @@ inline ::flatbuffers::Offset<GlobalState> CreateGlobalStateDirect(
       client_state__);
 }
 
+::flatbuffers::Offset<GlobalState> CreateGlobalState(::flatbuffers::FlatBufferBuilder &_fbb, const GlobalStateT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+struct PacketT : public ::flatbuffers::NativeTable {
+  typedef Packet TableType;
+  PacketType packet_type = PacketType_Join;
+  std::unique_ptr<Endpoint> endpoint{};
+  std::unique_ptr<Tick> tick{};
+  PacketPayloadUnion payload{};
+  PacketT() = default;
+  PacketT(const PacketT &o);
+  PacketT(PacketT&&) FLATBUFFERS_NOEXCEPT = default;
+  PacketT &operator=(PacketT o) FLATBUFFERS_NOEXCEPT;
+};
+
 struct Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef PacketT NativeTableType;
   typedef PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PACKET_TYPE = 4,
@@ -670,6 +1030,9 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetPointer<const void *>(VT_PAYLOAD);
   }
   template<typename T> const T *payload_as() const;
+  const Input *payload_as_Input() const {
+    return payload_type() == PacketPayload_Input ? static_cast<const Input *>(payload()) : nullptr;
+  }
   const GlobalState *payload_as_GlobalState() const {
     return payload_type() == PacketPayload_GlobalState ? static_cast<const GlobalState *>(payload()) : nullptr;
   }
@@ -683,7 +1046,14 @@ struct Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyPacketPayload(verifier, payload(), payload_type()) &&
            verifier.EndTable();
   }
+  PacketT *UnPack(const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  void UnPackTo(PacketT *_o, const ::flatbuffers::resolver_function_t *_resolver = nullptr) const;
+  static ::flatbuffers::Offset<Packet> Pack(::flatbuffers::FlatBufferBuilder &_fbb, const PacketT* _o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
+
+template<> inline const Input *Packet::payload_as<Input>() const {
+  return payload_as_Input();
+}
 
 template<> inline const GlobalState *Packet::payload_as<GlobalState>() const {
   return payload_as_GlobalState();
@@ -735,10 +1105,396 @@ inline ::flatbuffers::Offset<Packet> CreatePacket(
   return builder_.Finish();
 }
 
+::flatbuffers::Offset<Packet> CreatePacket(::flatbuffers::FlatBufferBuilder &_fbb, const PacketT *_o, const ::flatbuffers::rehasher_function_t *_rehasher = nullptr);
+
+inline Camera3DT::Camera3DT(const Camera3DT &o)
+      : position((o.position) ? new Vector3(*o.position) : nullptr),
+        target((o.target) ? new Vector3(*o.target) : nullptr),
+        up((o.up) ? new Vector3(*o.up) : nullptr),
+        fovy(o.fovy),
+        projection(o.projection) {
+}
+
+inline Camera3DT &Camera3DT::operator=(Camera3DT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(position, o.position);
+  std::swap(target, o.target);
+  std::swap(up, o.up);
+  std::swap(fovy, o.fovy);
+  std::swap(projection, o.projection);
+  return *this;
+}
+
+inline Camera3DT *Camera3D::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<Camera3DT>(new Camera3DT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void Camera3D::UnPackTo(Camera3DT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = position(); if (_e) _o->position = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = target(); if (_e) _o->target = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = up(); if (_e) _o->up = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = fovy(); _o->fovy = _e; }
+  { auto _e = projection(); _o->projection = _e; }
+}
+
+inline ::flatbuffers::Offset<Camera3D> Camera3D::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const Camera3DT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateCamera3D(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<Camera3D> CreateCamera3D(::flatbuffers::FlatBufferBuilder &_fbb, const Camera3DT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const Camera3DT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _position = _o->position ? _o->position.get() : nullptr;
+  auto _target = _o->target ? _o->target.get() : nullptr;
+  auto _up = _o->up ? _o->up.get() : nullptr;
+  auto _fovy = _o->fovy;
+  auto _projection = _o->projection;
+  return CreateCamera3D(
+      _fbb,
+      _position,
+      _target,
+      _up,
+      _fovy,
+      _projection);
+}
+
+inline EntityT::EntityT(const EntityT &o)
+      : entity_id(o.entity_id),
+        entity_label(o.entity_label),
+        position((o.position) ? new Vector3(*o.position) : nullptr),
+        facing((o.facing) ? new Vector3(*o.facing) : nullptr),
+        velocity((o.velocity) ? new Vector3(*o.velocity) : nullptr),
+        alive(o.alive) {
+}
+
+inline EntityT &EntityT::operator=(EntityT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(entity_id, o.entity_id);
+  std::swap(entity_label, o.entity_label);
+  std::swap(position, o.position);
+  std::swap(facing, o.facing);
+  std::swap(velocity, o.velocity);
+  std::swap(alive, o.alive);
+  return *this;
+}
+
+inline EntityT *Entity::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<EntityT>(new EntityT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void Entity::UnPackTo(EntityT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = entity_id(); _o->entity_id = _e; }
+  { auto _e = entity_label(); if (_e) _o->entity_label = _e->str(); }
+  { auto _e = position(); if (_e) _o->position = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = facing(); if (_e) _o->facing = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = alive(); _o->alive = _e; }
+}
+
+inline ::flatbuffers::Offset<Entity> Entity::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const EntityT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateEntity(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<Entity> CreateEntity(::flatbuffers::FlatBufferBuilder &_fbb, const EntityT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const EntityT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _entity_id = _o->entity_id;
+  auto _entity_label = _o->entity_label.empty() ? 0 : _fbb.CreateString(_o->entity_label);
+  auto _position = _o->position ? _o->position.get() : nullptr;
+  auto _facing = _o->facing ? _o->facing.get() : nullptr;
+  auto _velocity = _o->velocity ? _o->velocity.get() : nullptr;
+  auto _alive = _o->alive;
+  return CreateEntity(
+      _fbb,
+      _entity_id,
+      _entity_label,
+      _position,
+      _facing,
+      _velocity,
+      _alive);
+}
+
+inline ClientT::ClientT(const ClientT &o)
+      : endpoint((o.endpoint) ? new Endpoint(*o.endpoint) : nullptr),
+        tick((o.tick) ? new Tick(*o.tick) : nullptr),
+        client_uid(o.client_uid),
+        alive(o.alive),
+        sprint(o.sprint),
+        crouch(o.crouch),
+        grounded(o.grounded),
+        cooldown(o.cooldown),
+        position((o.position) ? new Vector3(*o.position) : nullptr),
+        facing((o.facing) ? new Vector3(*o.facing) : nullptr),
+        velocity((o.velocity) ? new Vector3(*o.velocity) : nullptr) {
+  entities.reserve(o.entities.size());
+  for (const auto &entities_ : o.entities) { entities.emplace_back((entities_) ? new EntityT(*entities_) : nullptr); }
+}
+
+inline ClientT &ClientT::operator=(ClientT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(endpoint, o.endpoint);
+  std::swap(tick, o.tick);
+  std::swap(client_uid, o.client_uid);
+  std::swap(alive, o.alive);
+  std::swap(sprint, o.sprint);
+  std::swap(crouch, o.crouch);
+  std::swap(grounded, o.grounded);
+  std::swap(cooldown, o.cooldown);
+  std::swap(position, o.position);
+  std::swap(facing, o.facing);
+  std::swap(velocity, o.velocity);
+  std::swap(entities, o.entities);
+  return *this;
+}
+
+inline ClientT *Client::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<ClientT>(new ClientT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void Client::UnPackTo(ClientT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = endpoint(); if (_e) _o->endpoint = std::unique_ptr<Endpoint>(new Endpoint(*_e)); }
+  { auto _e = tick(); if (_e) _o->tick = std::unique_ptr<Tick>(new Tick(*_e)); }
+  { auto _e = client_uid(); _o->client_uid = _e; }
+  { auto _e = alive(); _o->alive = _e; }
+  { auto _e = sprint(); _o->sprint = _e; }
+  { auto _e = crouch(); _o->crouch = _e; }
+  { auto _e = grounded(); _o->grounded = _e; }
+  { auto _e = cooldown(); _o->cooldown = _e; }
+  { auto _e = position(); if (_e) _o->position = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = facing(); if (_e) _o->facing = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = velocity(); if (_e) _o->velocity = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = entities(); if (_e) { _o->entities.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->entities[_i]) { _e->Get(_i)->UnPackTo(_o->entities[_i].get(), _resolver); } else { _o->entities[_i] = std::unique_ptr<EntityT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->entities.resize(0); } }
+}
+
+inline ::flatbuffers::Offset<Client> Client::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ClientT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateClient(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<Client> CreateClient(::flatbuffers::FlatBufferBuilder &_fbb, const ClientT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const ClientT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _endpoint = _o->endpoint ? _o->endpoint.get() : nullptr;
+  auto _tick = _o->tick ? _o->tick.get() : nullptr;
+  auto _client_uid = _o->client_uid;
+  auto _alive = _o->alive;
+  auto _sprint = _o->sprint;
+  auto _crouch = _o->crouch;
+  auto _grounded = _o->grounded;
+  auto _cooldown = _o->cooldown;
+  auto _position = _o->position ? _o->position.get() : nullptr;
+  auto _facing = _o->facing ? _o->facing.get() : nullptr;
+  auto _velocity = _o->velocity ? _o->velocity.get() : nullptr;
+  auto _entities = _o->entities.size() ? _fbb.CreateVector<::flatbuffers::Offset<Entity>> (_o->entities.size(), [](size_t i, _VectorArgs *__va) { return CreateEntity(*__va->__fbb, __va->__o->entities[i].get(), __va->__rehasher); }, &_va ) : 0;
+  return CreateClient(
+      _fbb,
+      _endpoint,
+      _tick,
+      _client_uid,
+      _alive,
+      _sprint,
+      _crouch,
+      _grounded,
+      _cooldown,
+      _position,
+      _facing,
+      _velocity,
+      _entities);
+}
+
+inline InputT::InputT(const InputT &o)
+      : w(o.w),
+        a(o.a),
+        s(o.s),
+        d(o.d),
+        mouse_delta((o.mouse_delta) ? new Vector2(*o.mouse_delta) : nullptr),
+        shoot(o.shoot),
+        space(o.space),
+        dt(o.dt),
+        previous_position((o.previous_position) ? new Vector3(*o.previous_position) : nullptr),
+        sprint(o.sprint),
+        crouch(o.crouch) {
+}
+
+inline InputT &InputT::operator=(InputT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(w, o.w);
+  std::swap(a, o.a);
+  std::swap(s, o.s);
+  std::swap(d, o.d);
+  std::swap(mouse_delta, o.mouse_delta);
+  std::swap(shoot, o.shoot);
+  std::swap(space, o.space);
+  std::swap(dt, o.dt);
+  std::swap(previous_position, o.previous_position);
+  std::swap(sprint, o.sprint);
+  std::swap(crouch, o.crouch);
+  return *this;
+}
+
+inline InputT *Input::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<InputT>(new InputT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void Input::UnPackTo(InputT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = w(); _o->w = _e; }
+  { auto _e = a(); _o->a = _e; }
+  { auto _e = s(); _o->s = _e; }
+  { auto _e = d(); _o->d = _e; }
+  { auto _e = mouse_delta(); if (_e) _o->mouse_delta = std::unique_ptr<Vector2>(new Vector2(*_e)); }
+  { auto _e = shoot(); _o->shoot = _e; }
+  { auto _e = space(); _o->space = _e; }
+  { auto _e = dt(); _o->dt = _e; }
+  { auto _e = previous_position(); if (_e) _o->previous_position = std::unique_ptr<Vector3>(new Vector3(*_e)); }
+  { auto _e = sprint(); _o->sprint = _e; }
+  { auto _e = crouch(); _o->crouch = _e; }
+}
+
+inline ::flatbuffers::Offset<Input> Input::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const InputT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateInput(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<Input> CreateInput(::flatbuffers::FlatBufferBuilder &_fbb, const InputT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const InputT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _w = _o->w;
+  auto _a = _o->a;
+  auto _s = _o->s;
+  auto _d = _o->d;
+  auto _mouse_delta = _o->mouse_delta ? _o->mouse_delta.get() : nullptr;
+  auto _shoot = _o->shoot;
+  auto _space = _o->space;
+  auto _dt = _o->dt;
+  auto _previous_position = _o->previous_position ? _o->previous_position.get() : nullptr;
+  auto _sprint = _o->sprint;
+  auto _crouch = _o->crouch;
+  return CreateInput(
+      _fbb,
+      _w,
+      _a,
+      _s,
+      _d,
+      _mouse_delta,
+      _shoot,
+      _space,
+      _dt,
+      _previous_position,
+      _sprint,
+      _crouch);
+}
+
+inline GlobalStateT::GlobalStateT(const GlobalStateT &o) {
+  client_state.reserve(o.client_state.size());
+  for (const auto &client_state_ : o.client_state) { client_state.emplace_back((client_state_) ? new ClientT(*client_state_) : nullptr); }
+}
+
+inline GlobalStateT &GlobalStateT::operator=(GlobalStateT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(client_state, o.client_state);
+  return *this;
+}
+
+inline GlobalStateT *GlobalState::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<GlobalStateT>(new GlobalStateT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void GlobalState::UnPackTo(GlobalStateT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = client_state(); if (_e) { _o->client_state.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->client_state[_i]) { _e->Get(_i)->UnPackTo(_o->client_state[_i].get(), _resolver); } else { _o->client_state[_i] = std::unique_ptr<ClientT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->client_state.resize(0); } }
+}
+
+inline ::flatbuffers::Offset<GlobalState> GlobalState::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const GlobalStateT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateGlobalState(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<GlobalState> CreateGlobalState(::flatbuffers::FlatBufferBuilder &_fbb, const GlobalStateT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const GlobalStateT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _client_state = _o->client_state.size() ? _fbb.CreateVector<::flatbuffers::Offset<Client>> (_o->client_state.size(), [](size_t i, _VectorArgs *__va) { return CreateClient(*__va->__fbb, __va->__o->client_state[i].get(), __va->__rehasher); }, &_va ) : 0;
+  return CreateGlobalState(
+      _fbb,
+      _client_state);
+}
+
+inline PacketT::PacketT(const PacketT &o)
+      : packet_type(o.packet_type),
+        endpoint((o.endpoint) ? new Endpoint(*o.endpoint) : nullptr),
+        tick((o.tick) ? new Tick(*o.tick) : nullptr),
+        payload(o.payload) {
+}
+
+inline PacketT &PacketT::operator=(PacketT o) FLATBUFFERS_NOEXCEPT {
+  std::swap(packet_type, o.packet_type);
+  std::swap(endpoint, o.endpoint);
+  std::swap(tick, o.tick);
+  std::swap(payload, o.payload);
+  return *this;
+}
+
+inline PacketT *Packet::UnPack(const ::flatbuffers::resolver_function_t *_resolver) const {
+  auto _o = std::unique_ptr<PacketT>(new PacketT());
+  UnPackTo(_o.get(), _resolver);
+  return _o.release();
+}
+
+inline void Packet::UnPackTo(PacketT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
+  (void)_o;
+  (void)_resolver;
+  { auto _e = packet_type(); _o->packet_type = _e; }
+  { auto _e = endpoint(); if (_e) _o->endpoint = std::unique_ptr<Endpoint>(new Endpoint(*_e)); }
+  { auto _e = tick(); if (_e) _o->tick = std::unique_ptr<Tick>(new Tick(*_e)); }
+  { auto _e = payload_type(); _o->payload.type = _e; }
+  { auto _e = payload(); if (_e) _o->payload.value = PacketPayloadUnion::UnPack(_e, payload_type(), _resolver); }
+}
+
+inline ::flatbuffers::Offset<Packet> Packet::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const PacketT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  return CreatePacket(_fbb, _o, _rehasher);
+}
+
+inline ::flatbuffers::Offset<Packet> CreatePacket(::flatbuffers::FlatBufferBuilder &_fbb, const PacketT *_o, const ::flatbuffers::rehasher_function_t *_rehasher) {
+  (void)_rehasher;
+  (void)_o;
+  struct _VectorArgs { ::flatbuffers::FlatBufferBuilder *__fbb; const PacketT* __o; const ::flatbuffers::rehasher_function_t *__rehasher; } _va = { &_fbb, _o, _rehasher}; (void)_va;
+  auto _packet_type = _o->packet_type;
+  auto _endpoint = _o->endpoint ? _o->endpoint.get() : nullptr;
+  auto _tick = _o->tick ? _o->tick.get() : nullptr;
+  auto _payload_type = _o->payload.type;
+  auto _payload = _o->payload.Pack(_fbb);
+  return CreatePacket(
+      _fbb,
+      _packet_type,
+      _endpoint,
+      _tick,
+      _payload_type,
+      _payload);
+}
+
 inline bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type) {
   switch (type) {
     case PacketPayload_NONE: {
       return true;
+    }
+    case PacketPayload_Input: {
+      auto ptr = reinterpret_cast<const Input *>(obj);
+      return verifier.VerifyTable(ptr);
     }
     case PacketPayload_GlobalState: {
       auto ptr = reinterpret_cast<const GlobalState *>(obj);
@@ -758,6 +1514,69 @@ inline bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const :
     }
   }
   return true;
+}
+
+inline void *PacketPayloadUnion::UnPack(const void *obj, PacketPayload type, const ::flatbuffers::resolver_function_t *resolver) {
+  (void)resolver;
+  switch (type) {
+    case PacketPayload_Input: {
+      auto ptr = reinterpret_cast<const Input *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    case PacketPayload_GlobalState: {
+      auto ptr = reinterpret_cast<const GlobalState *>(obj);
+      return ptr->UnPack(resolver);
+    }
+    default: return nullptr;
+  }
+}
+
+inline ::flatbuffers::Offset<void> PacketPayloadUnion::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ::flatbuffers::rehasher_function_t *_rehasher) const {
+  (void)_rehasher;
+  switch (type) {
+    case PacketPayload_Input: {
+      auto ptr = reinterpret_cast<const InputT *>(value);
+      return CreateInput(_fbb, ptr, _rehasher).Union();
+    }
+    case PacketPayload_GlobalState: {
+      auto ptr = reinterpret_cast<const GlobalStateT *>(value);
+      return CreateGlobalState(_fbb, ptr, _rehasher).Union();
+    }
+    default: return 0;
+  }
+}
+
+inline PacketPayloadUnion::PacketPayloadUnion(const PacketPayloadUnion &u) : type(u.type), value(nullptr) {
+  switch (type) {
+    case PacketPayload_Input: {
+      value = new InputT(*reinterpret_cast<InputT *>(u.value));
+      break;
+    }
+    case PacketPayload_GlobalState: {
+      value = new GlobalStateT(*reinterpret_cast<GlobalStateT *>(u.value));
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+inline void PacketPayloadUnion::Reset() {
+  switch (type) {
+    case PacketPayload_Input: {
+      auto ptr = reinterpret_cast<InputT *>(value);
+      delete ptr;
+      break;
+    }
+    case PacketPayload_GlobalState: {
+      auto ptr = reinterpret_cast<GlobalStateT *>(value);
+      delete ptr;
+      break;
+    }
+    default: break;
+  }
+  value = nullptr;
+  type = PacketPayload_NONE;
 }
 
 inline const Packet *GetPacket(const void *buf) {
@@ -788,6 +1607,18 @@ inline void FinishSizePrefixedPacketBuffer(
     ::flatbuffers::FlatBufferBuilder &fbb,
     ::flatbuffers::Offset<Packet> root) {
   fbb.FinishSizePrefixed(root);
+}
+
+inline std::unique_ptr<PacketT> UnPackPacket(
+    const void *buf,
+    const ::flatbuffers::resolver_function_t *res = nullptr) {
+  return std::unique_ptr<PacketT>(GetPacket(buf)->UnPack(res));
+}
+
+inline std::unique_ptr<PacketT> UnPackSizePrefixedPacket(
+    const void *buf,
+    const ::flatbuffers::resolver_function_t *res = nullptr) {
+  return std::unique_ptr<PacketT>(GetSizePrefixedPacket(buf)->UnPack(res));
 }
 
 #endif  // FLATBUFFERS_GENERATED_GAMESTATE_H_
