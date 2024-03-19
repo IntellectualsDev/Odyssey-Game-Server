@@ -38,8 +38,8 @@ struct InputBuilder;
 struct GlobalState;
 struct GlobalStateBuilder;
 
-struct OutputPacket;
-struct OutputPacketBuilder;
+struct OD_Packet;
+struct OD_PacketBuilder;
 
 enum PacketType : int8_t {
   PacketType_CreateLobby = 0,
@@ -830,8 +830,8 @@ inline ::flatbuffers::Offset<GlobalState> CreateGlobalStateDirect(
       client_state__);
 }
 
-struct OutputPacket FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef OutputPacketBuilder Builder;
+struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef OD_PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PACKET_TYPE = 4,
     VT_ENDPOINT = 6,
@@ -878,48 +878,48 @@ struct OutputPacket FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
 };
 
-template<> inline const Input *OutputPacket::payload_as<Input>() const {
+template<> inline const Input *OD_Packet::payload_as<Input>() const {
   return payload_as_Input();
 }
 
-template<> inline const GlobalState *OutputPacket::payload_as<GlobalState>() const {
+template<> inline const GlobalState *OD_Packet::payload_as<GlobalState>() const {
   return payload_as_GlobalState();
 }
 
-struct OutputPacketBuilder {
-  typedef OutputPacket Table;
+struct OD_PacketBuilder {
+  typedef OD_Packet Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
   void add_packet_type(PacketType packet_type) {
-    fbb_.AddElement<int8_t>(OutputPacket::VT_PACKET_TYPE, static_cast<int8_t>(packet_type), 0);
+    fbb_.AddElement<int8_t>(OD_Packet::VT_PACKET_TYPE, static_cast<int8_t>(packet_type), 0);
   }
   void add_endpoint(const Endpoint *endpoint) {
-    fbb_.AddStruct(OutputPacket::VT_ENDPOINT, endpoint);
+    fbb_.AddStruct(OD_Packet::VT_ENDPOINT, endpoint);
   }
   void add_reliable(bool reliable) {
-    fbb_.AddElement<uint8_t>(OutputPacket::VT_RELIABLE, static_cast<uint8_t>(reliable), 0);
+    fbb_.AddElement<uint8_t>(OD_Packet::VT_RELIABLE, static_cast<uint8_t>(reliable), 0);
   }
   void add_tick(const Tick *tick) {
-    fbb_.AddStruct(OutputPacket::VT_TICK, tick);
+    fbb_.AddStruct(OD_Packet::VT_TICK, tick);
   }
   void add_payload_type(PacketPayload payload_type) {
-    fbb_.AddElement<uint8_t>(OutputPacket::VT_PAYLOAD_TYPE, static_cast<uint8_t>(payload_type), 0);
+    fbb_.AddElement<uint8_t>(OD_Packet::VT_PAYLOAD_TYPE, static_cast<uint8_t>(payload_type), 0);
   }
   void add_payload(::flatbuffers::Offset<void> payload) {
-    fbb_.AddOffset(OutputPacket::VT_PAYLOAD, payload);
+    fbb_.AddOffset(OD_Packet::VT_PAYLOAD, payload);
   }
-  explicit OutputPacketBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  explicit OD_PacketBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<OutputPacket> Finish() {
+  ::flatbuffers::Offset<OD_Packet> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<OutputPacket>(end);
+    auto o = ::flatbuffers::Offset<OD_Packet>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<OutputPacket> CreateOutputPacket(
+inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     PacketType packet_type = PacketType_CreateLobby,
     const Endpoint *endpoint = nullptr,
@@ -927,7 +927,7 @@ inline ::flatbuffers::Offset<OutputPacket> CreateOutputPacket(
     const Tick *tick = nullptr,
     PacketPayload payload_type = PacketPayload_NONE,
     ::flatbuffers::Offset<void> payload = 0) {
-  OutputPacketBuilder builder_(_fbb);
+  OD_PacketBuilder builder_(_fbb);
   builder_.add_payload(payload);
   builder_.add_tick(tick);
   builder_.add_endpoint(endpoint);
@@ -966,33 +966,33 @@ inline bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const :
   return true;
 }
 
-inline const OutputPacket *GetOutputPacket(const void *buf) {
-  return ::flatbuffers::GetRoot<OutputPacket>(buf);
+inline const OD_Packet *GetOD_Packet(const void *buf) {
+  return ::flatbuffers::GetRoot<OD_Packet>(buf);
 }
 
-inline const OutputPacket *GetSizePrefixedOutputPacket(const void *buf) {
-  return ::flatbuffers::GetSizePrefixedRoot<OutputPacket>(buf);
+inline const OD_Packet *GetSizePrefixedOD_Packet(const void *buf) {
+  return ::flatbuffers::GetSizePrefixedRoot<OD_Packet>(buf);
 }
 
-inline bool VerifyOutputPacketBuffer(
+inline bool VerifyOD_PacketBuffer(
     ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<OutputPacket>(nullptr);
+  return verifier.VerifyBuffer<OD_Packet>(nullptr);
 }
 
-inline bool VerifySizePrefixedOutputPacketBuffer(
+inline bool VerifySizePrefixedOD_PacketBuffer(
     ::flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<OutputPacket>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<OD_Packet>(nullptr);
 }
 
-inline void FinishOutputPacketBuffer(
+inline void FinishOD_PacketBuffer(
     ::flatbuffers::FlatBufferBuilder &fbb,
-    ::flatbuffers::Offset<OutputPacket> root) {
+    ::flatbuffers::Offset<OD_Packet> root) {
   fbb.Finish(root);
 }
 
-inline void FinishSizePrefixedOutputPacketBuffer(
+inline void FinishSizePrefixedOD_PacketBuffer(
     ::flatbuffers::FlatBufferBuilder &fbb,
-    ::flatbuffers::Offset<OutputPacket> root) {
+    ::flatbuffers::Offset<OD_Packet> root) {
   fbb.FinishSizePrefixed(root);
 }
 

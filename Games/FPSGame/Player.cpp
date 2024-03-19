@@ -6,10 +6,37 @@
 #include <raymath.h>
 #include <algorithm>
 
+//cameraTarget init example (10f, 2f, 10f)
+// camera.up
+//Player::Player(Vector3 initPosition, Vector3 initVelocity, Vector3 initHitBox, float dt) : previousState(), currentState(){
+//    previousState.position = initPosition;
+//    previousState.velocity = initVelocity;
+//    previousState.hitBox = initHitBox;
+//    previousState.playerBox = (BoundingBox){(Vector3){previousState.position.x - previousState.hitBox.x/2,
+//                                                            previousState.position.y - previousState.hitBox.y/2,
+//                                                            previousState.position.z - previousState.hitBox.z/2},
+//                                            (Vector3){previousState.position.x + previousState.hitBox.x/2,
+//                                                            previousState.position.y + previousState.hitBox.y/2,
+//                                                            previousState.position.z + previousState.hitBox.z/2}};
+//    previousState.camera = {0};
+//    previousState.camera.position = previousState.position;
+//    previousState.camera.target = (Vector3){10.0f, 2.0f, 10.0f};
+//    previousState.camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+//    previousState.camera.fovy = 60.0f;
+//    previousState.camera.projection = CAMERA_PERSPECTIVE;
+//    previousState.alive = true;
+//    previousState.grounded = false;
+//    previousState.topCollision = false;
+//    previousState.coolDown = 0;
+//    previousState.separationVector = (Vector3){0.0f, 0.0f, 0.0f}; //TODO: check default value with joseph
+//
+//    previousState.dt = dt; // provided by client
+//}
+
 void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch) {
 //Continious collision detection.
-
-    if(CheckCollisionBoxes(playerBox,terrainList[3])){
+    currentState.dt = dt;
+    if(CheckCollisionBoxes(previousState.playerBox,terrainList[3])){
 //        setGrounded(true);
         currentState.grounded = true;
     }
@@ -24,14 +51,14 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
         currentState.grounded = false;
         currentState.space = false;
     }
-    if(space && grounded){
+    if(space && previousState.grounded){
 //        grounded = false;
 //        velocity = (Vector3){(w)* dt*4  -(s)*dt*4 ,((space)*Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
         currentState.grounded = false;
-        currentState.velocity = (Vector3){(w)* dt*4 -(s)*dt*4 ,((space)*Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
-    }else if (!grounded){
+        currentState.velocity = (Vector3){(w)* dt*4 -(s)*dt*4 ,((space)*Player::Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
+    }else if (!previousState.grounded){
 //        velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,velocity.y + Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
-        currentState.velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,previousState.velocity.y + Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
+        currentState.velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,previousState.velocity.y + Player::Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
     }else{
 //        velocity = (Vector3){(w)*dt*4  -(s)*dt*4 ,0,(d)*dt*4  -(a)*dt*4 };
         currentState.velocity = (Vector3){(w)*dt*4  -(s)*dt*4 ,0,(d)*dt*4  -(a)*dt*4 };
@@ -40,7 +67,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
     //TODO check for case to set grounded == true
     //TODO implement grounded/jumping movement
     UpdateCameraPro(&previousState.camera,
-    Vector3Multiply((Vector3){velocity.x,velocity.z,velocity.y},(Vector3){(sprint+1.0f), (sprint+1.0f), 1.0f}),//SHIT
+    Vector3Multiply((Vector3){previousState.velocity.x,previousState.velocity.z, previousState.velocity.y},(Vector3){(sprint+1.0f), (sprint+1.0f), 1.0f}),//SHIT
     (Vector3){
         mouseDelta.x*dt*2.0f ,                            // Rotation: yaw
         mouseDelta.y*dt*2.0f,                            // Rotation: pitch
@@ -58,6 +85,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 //        Bullet temp(Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(&currentState.camera),0.7f)), Vector3Scale(camera_direction(&currentState.camera),5.0f),(Vector3){0.1f,0.1f,0.1f},
 //                    true);
         struct FPSEntityState temp;
+
         temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(&currentState.camera),0.7f));
         temp.velocity = Vector3Scale(camera_direction(&currentState.camera),5.0f);
         temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
@@ -76,7 +104,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
                 currentState.position.y = 2+topBoxVector[i].max.y;//bad code
                 currentState.camera.position.y = currentState.position.y;
                 currentState.topCollision = true;
-            }else if(CheckCollision(previousState.playerBox,terrainList[i],currentState.separationVector)){ // check coliision modies passed seperationVector
+            }else if(Player::CheckCollision(previousState.playerBox,terrainList[i],currentState.separationVector)){ // check coliision modies passed seperationVector
                 currentState.position = Vector3Add(currentState.position,currentState.separationVector);
                 currentState.camera.position = currentState.position;
                 currentState.camera.target = Vector3Add(currentState.camera.target,currentState.separationVector);
@@ -86,17 +114,17 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 
     }
     //TODO: statically define hitbox (size of player) on init
-    currentState.playerBox.min = (Vector3){currentState.position.x - hitbox.x/2,
-                              currentState.position.y - hitbox.y/2-1.0f,
-                              currentState.position.z - hitbox.z/2};
-    currentState.playerBox.max = (Vector3){currentState.position.x + hitbox.x/2,
-                              currentState.position.y + hitbox.y/2-0.5f,
-                              currentState.position.z + hitbox.z/2};
+    currentState.playerBox.min = (Vector3){currentState.position.x - Player::hitbox.x/2,
+                              currentState.position.y - Player::hitbox.y/2-1.0f,
+                              currentState.position.z - Player::hitbox.z/2};
+    currentState.playerBox.max = (Vector3){currentState.position.x + Player::hitbox.x/2,
+                              currentState.position.y + Player:hitbox.y/2-0.5f,
+                              currentState.position.z + Player::hitbox.z/2};
 }
 
-void Player::setCameraMode(int temp) {
-
-}
+//void Player::setCameraMode(int temp) {
+//
+//}
 
 
 Vector3 Player::camera_direction(Camera *tcamera) {

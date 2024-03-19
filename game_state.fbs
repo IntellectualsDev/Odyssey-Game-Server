@@ -109,7 +109,7 @@ union PacketPayload {
     GlobalState,
 }
 
-table OutputPacket {
+table OD_Packet {
     packet_type: PacketType;
     endpoint: Endpoint;
     reliable: bool; //TODO: find a way to keep this out of the buffer (but have a way for the transmitter to check if it is reliable)
@@ -117,4 +117,4 @@ table OutputPacket {
     payload: PacketPayload;
 }
 
-root_type OutputPacket;
+root_type OD_Packet;
