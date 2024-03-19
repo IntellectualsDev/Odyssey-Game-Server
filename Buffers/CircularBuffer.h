@@ -30,7 +30,7 @@ public:
 
     std::unique_ptr<BufferHandler> pop();
 
-    std::optional<vector<unique_ptr<BufferHandler>>> popAll();
+    vector<unique_ptr<BufferHandler>> popAll();
 
     void resetBuffer();
 

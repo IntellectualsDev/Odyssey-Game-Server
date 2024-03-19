@@ -70,7 +70,7 @@ unique_ptr<BufferHandler> PartitionedPacketBuffer::popFromPartition(size_t index
     return partitions[index]->pop();
 }
 
-std::optional<vector<unique_ptr<BufferHandler>>> PartitionedPacketBuffer::popAllFromPartition(size_t index) {
+vector<unique_ptr<BufferHandler>> PartitionedPacketBuffer::popAllFromPartition(size_t index) {
     return partitions[index]->popAll();
 }
 

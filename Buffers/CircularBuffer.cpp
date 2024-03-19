@@ -55,18 +55,21 @@ unique_ptr<BufferHandler> CircularBuffer::pop() {
 //    return packet;
 }
 
-std::optional<vector<unique_ptr<BufferHandler>>> CircularBuffer::popAll() {
+//TODO: get rid of optional
+vector<unique_ptr<BufferHandler>> CircularBuffer::popAll() {
     unique_lock<std::mutex> lock(mutex);
     if(isEmpty()){
-        return std::nullopt;;
+        vector<unique_ptr<BufferHandler>> empty;
+        return empty;
     }
     vector<unique_ptr<BufferHandler>> output;
+    output.reserve(count);
     while(!isEmpty()){
         output.push_back(std::move(buffer[head]));
         head = (head+1) % capacity;
         count--;
     }
-    return output;
+    return std::move(output);
 }
 
 

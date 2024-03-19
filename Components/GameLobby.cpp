@@ -45,17 +45,15 @@ void GameLobby::run() {
         auto nextTick = tickStartTime + secondsPerTick;
         {
             std::lock_guard<std::mutex> guard(consoleMutex);
-            cout << "Entering tick " << tickNumber << std::endl;
+//            cout << "Entering tick " << tickNumber << std::endl;
         }
 
-        auto temp = receiveBuffer->popAllFromPartition(partitionIndex);
-
-        if(temp.has_value()){
-            vector<unique_ptr<BufferHandler>> currentTickPackets = std::move(temp.value());
-            if(!currentTickPackets.empty()){
-                for(int i = 0; i < currentTickPackets.size(); i++){
-                    processPacket(std::move(currentTickPackets[i]));
-                }
+        auto currentTickPackets = receiveBuffer->popAllFromPartition(partitionIndex);
+        cout << "# of pulled packets: " << currentTickPackets.size() << endl;
+        if(!currentTickPackets.empty()){
+//            vector<unique_ptr<BufferHandler>> currentTickPackets = std::move(temp.value());
+            for(int i = 0; i < currentTickPackets.size(); i++){
+                processPacket(std::move(currentTickPackets[i]));
             }
         }
 
@@ -66,6 +64,7 @@ void GameLobby::run() {
             cout << "Remaining time in tick: " << tickNumber << ":\n\t"
                  << std::chrono::duration_cast<std::chrono::milliseconds>(nextTick - now).count() << " ms" << endl;
         }
+
 
         sendSnapShot();
         tickNumber++;
@@ -106,8 +105,18 @@ void GameLobby::run() {
 void GameLobby::processPacket(unique_ptr<BufferHandler> packet) {
     {
         std::lock_guard<std::mutex> guard(consoleMutex);
-        cout << "Packet Info: Label = "  << EnumNamePacketType(packet->getPacketView()->packet_type()) << "\n source point: " << packet->getPacketView()->source_point()->address() << ", " << packet->getPacketView()->source_point()->port() << endl;
-        cout << "W: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
+        cout << "Packet Label: " << EnumNamePacketType(packet->getPacketView()->packet_type()) << endl;
+        cout << "Source Point: (IP: " << packet->getPacketView()->source_point()->address() << ", Port: " << packet->getPacketView()->source_point()->port() << ") " << endl;
+        cout << "Destination Point: (IP: " << packet->getPacketView()->dest_point()->address() << ", Port: " << packet->getPacketView()->dest_point()->port() << ") " << endl;
+        cout << "Lobby Number: " << packet->getPacketView()->lobby_number() << endl;
+        cout << "Client Tick Number: " << packet->getPacketView()->tick()->tick_number() << endl;
+        cout << "Payload: \n\t: ";
+        cout << "Payload Type: " << EnumNamePacketPayload(packet->getPacketView()->payload_type()) << endl;
+        cout << "\tdt: " << packet->getPacketView()->tick()->dt() << endl;
+        cout << "\tW: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
+        cout << "\tMouseDelta: (" << packet->getPacketView()->payload_as_Input()->mouse_delta()->x() << ", " << packet->getPacketView()->payload_as_Input()->mouse_delta()->y() << ")" << endl;
+        cout << "\tShoot: " << to_string(packet->getPacketView()->payload_as_Input()->shoot()) << ", Jump: " << to_string(packet->getPacketView()->payload_as_Input()->space()) << ", Sprint: " << to_string(packet->getPacketView()->payload_as_Input()->sprint()) << endl;
+        cout << "\tPrevious State: (" << packet->getPacketView()->payload_as_Input()->previous_position()->x() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->y() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->z() << ")\n" << endl;
     }
 
 

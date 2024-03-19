@@ -17,7 +17,7 @@ public:
     void freeReceiveBufferPartition(size_t index);
 
     unique_ptr<BufferHandler> popFromReceiveBufferParition(size_t index);
-    std::optional<vector<unique_ptr<BufferHandler>>> popAllFromReceiveBufferParition(size_t index);
+    vector<unique_ptr<BufferHandler>> popAllFromReceiveBufferParition(size_t index);
     bool pushToReceiveBufferPartition(size_t index, unique_ptr<BufferHandler> packet);
     void notifyAllOnPartition(size_t index);
 

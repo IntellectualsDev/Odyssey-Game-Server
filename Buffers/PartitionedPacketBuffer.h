@@ -33,7 +33,7 @@ public:
 
     unique_ptr<BufferHandler> popFromPartition(size_t index);
 
-    std::optional<vector<unique_ptr<BufferHandler>>> popAllFromPartition(size_t index);
+    vector<unique_ptr<BufferHandler>> popAllFromPartition(size_t index);
 
     void notifyAllOnPartition(size_t index);
 

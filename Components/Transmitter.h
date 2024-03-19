@@ -26,10 +26,13 @@ public:
 private:
     // Pass down in GatewayServer constructor
     void transmitLoop();
+    bool connect(const string& clientIP, int port);
+    bool disconnect(const string& client);
     void transmitPacket(unique_ptr<BufferHandler> packet);
 
     ENetHost* server;
     ENetAddress address;
+    vector<ENetPeer *> peers;
     int port;
 
     thread transmitThread;

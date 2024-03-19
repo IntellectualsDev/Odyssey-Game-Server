@@ -67,7 +67,9 @@ void Gateway::networkLoop() {
                     break;
 
                 case ENET_EVENT_TYPE_RECEIVE: {
+                    cout << "Received Packet!" << endl;
                     //TODO: Pass to the middle buffer, if NEW CLIENT slaves will translate IP to MAC ID if authenticated
+
                     auto odPacket = GetOD_Packet(event.packet->data);
                     if(!odPacket){
                         cerr << "Invalid Packet: No serial Data" << endl;

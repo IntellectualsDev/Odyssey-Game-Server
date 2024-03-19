@@ -8,13 +8,14 @@ Transmitter::Transmitter(string gatewayIP, int port, PacketBuffer *transmitBuffe
                          int outgoingBandwith):
     port(port),
     transmitBuffer(transmitBuffer),
+    peers(),
     shutdownFlag(false){
         char* serverAddressChar = new char[gatewayIP.length()+1]; // convert string IP to char * used in enet set host ip
         strcpy(serverAddressChar, gatewayIP.c_str());
         printf("char array for Gateway Server = %s\n", serverAddressChar);
 
         enet_address_set_host_ip(&address, serverAddressChar);
-        server = enet_host_create(&address,
+        server = enet_host_create(&address, //TODO: the &address should be replaced with NULL !!! (since it is sending)
                          maxConnections,
                          numChannels,
                          incomingBandwith,
@@ -50,7 +51,13 @@ void Transmitter::transmitPacket(unique_ptr<BufferHandler> packet){
 //    ENetAddress clientAddress = packet->toSendAddress;
 //
 //    if(packet->isSendAddressSet){
+//        //TODO: search the peers vector and ensure that peer does not exist, then add
 //        ENetPeer* client = enet_host_connect(server, &clientAddress, 1, 0);
+//        for(int i = 0; i < peers.size(); i++){
+//            if()
+//        }
+//
+//
 //
 //        if(client == nullptr){
 //            fprintf(stderr, "ERR In Transmitter's Transmit method() | line 41\n\tTransmitter's ENet Host cannot support initiating a new ENet Connection\n\n");

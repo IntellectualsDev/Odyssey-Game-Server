@@ -19,7 +19,7 @@ unique_ptr<BufferHandler> LobbyManagementService::popFromReceiveBufferParition(s
     return receiveBuffer.popFromPartition(index);
 }
 
-std::optional<vector<unique_ptr<BufferHandler>>> LobbyManagementService::popAllFromReceiveBufferParition(size_t index) {
+vector<unique_ptr<BufferHandler>> LobbyManagementService::popAllFromReceiveBufferParition(size_t index) {
     return receiveBuffer.popAllFromPartition(index);
 }
 

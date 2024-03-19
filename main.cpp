@@ -7,6 +7,7 @@
 #include "Components/GameLobby.h"
 #include "Components/Gateway.h"
 #include "Components/Transmitter.h"
+#include "Servers/DummyServer.h"
 
 #include <mutex>
 mutex consoleMutex;
@@ -64,13 +65,14 @@ int main() {
     }
     atexit (enet_deinitialize);
 
+    //    ______________________________Official Game Server Code______________________________________________
     PartitionedPacketBuffer* receiveBuffer = new PartitionedPacketBuffer(100, 500, consoleMutex);
     PacketBuffer* outputBuffer = new PacketBuffer();
 
     //create the ENetHost here for Transmitter, and ENetAddress corresponding to the host here
 
-    auto gateway = new Gateway("", 5450, receiveBuffer);
-    auto transmitter = new Transmitter("", 5450, outputBuffer);
+    auto gateway = new Gateway("192.168.1.12", 5450, receiveBuffer);
+    auto transmitter = new Transmitter("192.168.1.12", 5451, outputBuffer);
 
     GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex);
 
@@ -78,7 +80,15 @@ int main() {
     transmitter->start();
     gameLobby.start();
 
+    while(true){
 
+    }
+//    ______________________________________________________________________________________________
+//    DummyServer dummyServer("192.168.1.12", 5450);
+//
+//    while(true){
+//        dummyServer.listenForPacket();
+//    }
 //    ______________________________________________________________________________________________
 //
 //    const size_t bufferSize = 100;
