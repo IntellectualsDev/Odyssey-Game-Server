@@ -15,7 +15,6 @@
 #include <iostream>
 #include "../Buffers/PacketBuffer.h"
 #include "../Components/Gateway.h"
-#include "../Components/ExecutorSlave.h"
 #include "../Data Structs/ServerAddressInfo.h"
 
 
@@ -28,50 +27,50 @@ using namespace std;
  */
 
 class GameServer {
-public:
-    GameServer(string gatewayServerIP, int gatewayServerPort, int maxConnections, int numChannels, int incomingBandwith, int outgoingBandwith);
-    ~GameServer();
+//public:
+//    GameServer(string gatewayServerIP, int gatewayServerPort, int maxConnections, int numChannels, int incomingBandwith, int outgoingBandwith);
+//    ~GameServer();
+//
+//    // run method
+//    void start();
+//
+//    // shutdown method
+//    void shutdown();
+//
+//    void determineNumExecutorSlaves();
+//
+//    void addGameServer();
+//
+//    void removeGameServer();
 
-    // run method
-    void start();
-
-    // shutdown method
-    void shutdown();
-
-    void determineNumExecutorSlaves();
-
-    void addGameServer();
-
-    void removeGameServer();
-
-private:
-    PacketBuffer receiveBuffer;
-    PacketBuffer outputBuffer;
-
-    //Data Structures
-    ServerAddressInfo serverInformation;
-
-    // Components:
-    Gateway gateway;
-    vector<ExecutorSlave*> executorSlaves;
-
-    int numExecSlaves = 10;
-    deque<pair<string, ENetPeer *>> gameServerStack; // possible stack architecture to keep the newest servers at the top
-    vector<pair<string, string>> activeGameServers; // (IP, Port) to forward requests
-
-    // TODO spawn Executor Slaves;
-
-
-
-    // TODO: find a way for the Executor Slaves to access these global functions. One example is that the Gateway Server should
-    // know and house which game servers are active since that is global information, but the ExecutorSlaves must know so that
-    // they know where to forward requests
-
-    // authenticate client
-    void authenticateClient();
-
-    // relevant methods to forward packets to other microservices
-    void forwardClientToGameServer();
+//private:
+//    PacketBuffer receiveBuffer;
+//    PacketBuffer outputBuffer;
+//
+//    //Data Structures
+//    ServerAddressInfo serverInformation;
+//
+//    // Components:
+//    Gateway gateway;
+////    vector<ExecutorSlave*> executorSlaves;
+//
+//    int numExecSlaves = 10;
+//    deque<pair<string, ENetPeer *>> gameServerStack; // possible stack architecture to keep the newest servers at the top
+//    vector<pair<string, string>> activeGameServers; // (IP, Port) to forward requests
+//
+//    // TODO spawn Executor Slaves;
+//
+//
+//
+//    // TODO: find a way for the Executor Slaves to access these global functions. One example is that the Gateway Server should
+//    // know and house which game servers are active since that is global information, but the ExecutorSlaves must know so that
+//    // they know where to forward requests
+//
+//    // authenticate client
+//    void authenticateClient();
+//
+//    // relevant methods to forward packets to other microservices
+//    void forwardClientToGameServer();
 
 };
 #endif //ODYSSEYGAMESERVER_GATEWAYSERVER_H

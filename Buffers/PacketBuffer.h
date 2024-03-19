@@ -14,6 +14,13 @@
 #include <queue>
 #include <memory>
 
+// Needed for manual building
+#include <functional>
+#include <atomic>
+#include "../Data Structs/BufferHandler.h"
+
+
+
 using namespace std;
 
 /*
@@ -32,25 +39,25 @@ using namespace std;
  *
  */
 
-struct Packet {
-    string label;
-    ENetPacket *packet;
-    chrono::high_resolution_clock::time_point timeAdded;
+//struct Packet {
+//    string label;
+//    ENetPacket *packet;
+//    chrono::high_resolution_clock::time_point timeAdded;
+//
+//    bool isSendAddressSet;
+//    ENetAddress toSendAddress;
+//    int toSendChannel;
+//
+//    Packet(string lbl, ENetPacket* pkt)
+//    : label(std::move(lbl)), packet(pkt), timeAdded(chrono::high_resolution_clock::now()), isSendAddressSet(false)
+//    {
+//        toSendAddress.host = ENET_HOST_ANY;
+//        toSendAddress.port = 0;
+//        toSendChannel = -1;
+//    };
+//};
 
-    bool isSendAddressSet;
-    ENetAddress toSendAddress;
-    int toSendChannel;
-
-    Packet(string lbl, ENetPacket* pkt)
-    : label(std::move(lbl)), packet(pkt), timeAdded(chrono::high_resolution_clock::now()), isSendAddressSet(false)
-    {
-        toSendAddress.host = ENET_HOST_ANY;
-        toSendAddress.port = 0;
-        toSendChannel = -1;
-    };
-};
-
-using SubscriberCallback = function<void (const Packet*)>;
+//using SubscriberCallback = function<void (const Packet*)>;
 
 class PacketBuffer {
     public:
@@ -65,10 +72,10 @@ class PacketBuffer {
         PacketBuffer& operator=(const PacketBuffer&) = delete;
 
         // add to the buffer, (acquire the lock and add to end)
-        void addPacket(unique_ptr<Packet> packet);
+        void addPacket(unique_ptr<BufferHandler> packet);
 
         // remove from the buffer, wait until not empty or shutdown & acquire the lock and pop from front
-        unique_ptr<Packet> removePacket();
+        unique_ptr<BufferHandler> removePacket();
 
         // wake all waiting threads
         void notifyAll();
@@ -85,7 +92,7 @@ class PacketBuffer {
         condition_variable buffer_Condition;
 
 
-        queue<unique_ptr<Packet>> packetQueue;
+        queue<unique_ptr<BufferHandler>> packetQueue;
 };
 
 #endif //ODYSSEYGAMESERVER_PACKETBUFFER_H

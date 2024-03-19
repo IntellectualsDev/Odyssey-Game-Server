@@ -29,7 +29,7 @@ private:
 
 public:
 
-    DummyServer(string serverIP, int port, int numConnections = 32, int numChannels = 2, int incomingBandwith = 0, int outgoingBandwith = 0);
+    DummyServer(string serverIP, int port, int numConnections = 32, int numChannels = 10, int incomingBandwith = 0, int outgoingBandwith = 0);
 
     bool connect(string clientAddressToConnect, int clientPortToConnect);
 

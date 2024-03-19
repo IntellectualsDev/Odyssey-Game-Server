@@ -8,14 +8,18 @@
 #include <string>
 #include <map>
 
-#include "../Buffers/PacketBuffer.h"
+// include in manual build
+#include <cstring>
+
+#include "../Buffers/PartitionedPacketBuffer.h"
+#include "../game_state_generated.h"
 
 using namespace std;
 
 
 class Gateway {
 public:
-    Gateway(string gatewayIP, int gatewayPort, int maxConnections, int numChannels, int incomingBandwith, int outgoingBandwith, PacketBuffer& buffer);
+    Gateway(string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, int maxConnections=3500, int numChannels=20, int incomingBandwith=0, int outgoingBandwith=0);
     ~Gateway();
 
     void start();
@@ -45,7 +49,7 @@ private:
     condition_variable networkCV;
     atomic<bool> shutdownFlag;
 
-    PacketBuffer& receiveBuffer;
+    PartitionedPacketBuffer* receiveBuffer;
     map<string, pair<string, ENetPeer *>> clientList;
 
 };

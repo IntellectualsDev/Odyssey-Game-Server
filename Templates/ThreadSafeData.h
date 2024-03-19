@@ -6,6 +6,7 @@
 #define ODYSSEYGAMESERVER_THREADSAFEDATA_H
 
 #include <shared_mutex>
+#include <mutex>
 
 using namespace std;
 
@@ -19,7 +20,7 @@ public:
     ThreadSafeData& operator=(const ThreadSafeData&) = delete;
 
 protected:
-    mutable shared_mutex mutex;
+    mutable std::shared_mutex mutex;
 
     template<typename Action>
     auto readAction(Action action) const -> decltype(action()) {

@@ -9,11 +9,12 @@
 #include <map>
 
 #include "../Buffers/PacketBuffer.h"
+#include "../Data Structs/BufferHandler.h"
 
 
 class Transmitter {
 public:
-    Transmitter(ENetHost* server, ENetAddress address, int port, PacketBuffer& transmitBuffer);
+    Transmitter(string gatewayIP, int port, PacketBuffer *transmitBuffer, int maxConnections=3500, int numChannels=20, int incomingBandwith=0, int outgoingBandwith=0);
 
     void start();
 
@@ -25,16 +26,19 @@ public:
 private:
     // Pass down in GatewayServer constructor
     void transmitLoop();
-    void transmitPacket(unique_ptr<Packet> packet);
+    bool connect(const string& clientIP, int port);
+    bool disconnect(const string& client);
+    void transmitPacket(unique_ptr<BufferHandler> packet);
 
     ENetHost* server;
     ENetAddress address;
+    vector<ENetPeer *> peers;
     int port;
 
     thread transmitThread;
     atomic<bool> shutdownFlag;
 
-    PacketBuffer& transmitBuffer;
+    PacketBuffer* transmitBuffer;
 
 };
 
