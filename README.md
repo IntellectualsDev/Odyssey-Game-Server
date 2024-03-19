@@ -1,4 +1,5 @@
 # Odyssey-Game-Server
+<img width="1400" alt="Screen Shot 2024-03-19 at 6 17 14 PM" src="https://github.com/IntellectualsDev/Odyssey-Game-Server/assets/72891464/3c8ca696-8fa6-4330-bd7f-effdc021dbe9">
 
 ## Project Overview:
 The GameServer project is a robust, horizantally scalable backend solution designed to support The Odyssey Platform's real-time multiplayer games. It is a part of The Odyssey MicroService Suite, encapsulating all game functionality. Its core functionality revolves around managing player connections, simulating game states to ensure validity, and implementing networking techniques such as Client Side Prediction, Entity Interpolation, and Lag Compensation to ensure smooth, real-time interactions among players across various devices. The server is engineered to handle high loads with minimal latency, providing a seamless gaming experience that is crucial for maintaining engagement and competitive fairness.
