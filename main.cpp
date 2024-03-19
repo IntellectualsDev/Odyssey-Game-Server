@@ -74,7 +74,7 @@ int main() {
     auto gateway = new Gateway("192.168.1.12", 5450, receiveBuffer);
     auto transmitter = new Transmitter("192.168.1.12", 5451, outputBuffer);
 
-    GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex);
+    GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex, false);
 
     gateway->start();
     transmitter->start();

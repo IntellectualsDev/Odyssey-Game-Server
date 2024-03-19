@@ -6,6 +6,7 @@
 #define ODYSSEY_GAME_SERVER_GAMELOBBY_H
 
 #include "LobbyManagementService.h"
+#include "../Games/FPSGame/FPS_Game.h"
 
 #include <thread>
 #include <mutex>
@@ -22,7 +23,7 @@ using namespace std;
 
 class GameLobby {
 public:
-    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, mutex& consoleMutex);
+    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, mutex& consoleMutex, bool showGUI);
 //    GameLobby(LobbyManagementService& lobbyManagementService): LobbyServices(lobbyManagementService){};
     void start();
     void stop();
@@ -31,7 +32,9 @@ public:
 private:
     void run();
     void processPacket(unique_ptr<BufferHandler> packet);
-    void update();
+    void update(unique_ptr<BufferHandler> packet);
+//    void
+    void render();
     void sendSnapShot();
 
 //    LobbyManagementService* LobbyServices;
@@ -42,13 +45,17 @@ private:
 
     atomic<bool> stopFlag;
     thread workerThread;
+    mutex& consoleMutex;
 
     uint32_t tickNumber = 0;
     const float tickRate = 60.0f;
-//    const float secondPerTick = 1.0f / tickRate;
     std::chrono::steady_clock::time_point lastTick;
 
-    mutex& consoleMutex;
+    FPS_Game game;
+
+    bool showGUI;
+    int screenWidth;
+    int screenHeight;
 };
 
 

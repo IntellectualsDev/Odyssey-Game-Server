@@ -90,6 +90,7 @@ table Client {
 }
 
 table Input {
+    client_uid: uint;
     w: bool;
     a: bool;
     s: bool;

@@ -56,11 +56,11 @@ add_executable(Odyssey_Game_Server main.cpp
         Buffers/LIFOCircularBuffer.cpp
         Buffers/LIFOCircularBuffer.h
         Games/FPSGame/FPSRules.h
-        Games/FPSGame/Player.cpp
-        Games/FPSGame/Player.cpp
-        Games/FPSGame/Player.h
-        Games/FPSGame/Game.h
-        Games/FPSGame/Game.cpp "Data Structs/BufferHandler.h" Servers/DummyServer.cpp)
+        Games/FPSGame/FPS_Player.cpp
+        Games/FPSGame/FPS_Player.cpp
+        Games/FPSGame/FPS_Player.h
+        Games/FPSGame/FPS_Game.h
+        Games/FPSGame/FPS_Game.cpp "Data Structs/BufferHandler.h" Servers/DummyServer.cpp)
     # TODO: Don't forget to add the encryption files when completed
 
 # Link against the ENet library. It informs CMake that the executable needs to be linked with ENet library

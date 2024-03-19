@@ -2,7 +2,7 @@
 // Created by josep on 2/8/2024.
 //
 
-#include "Player.h"
+#include "FPS_Player.h"
 #include <raymath.h>
 #include <algorithm>
 
@@ -33,7 +33,7 @@
 //    previousState.dt = dt; // provided by client
 //}
 
-void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch) {
+void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch) {
 //Continious collision detection.
     currentState.dt = dt;
     if(CheckCollisionBoxes(previousState.playerBox,terrainList[3])){
@@ -55,10 +55,10 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 //        grounded = false;
 //        velocity = (Vector3){(w)* dt*4  -(s)*dt*4 ,((space)*Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
         currentState.grounded = false;
-        currentState.velocity = (Vector3){(w)* dt*4 -(s)*dt*4 ,((space)*Player::Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
+        currentState.velocity = (Vector3){(w)* dt*4 -(s)*dt*4 ,((space)*FPS_Player::Jump*10*dt),(d)*dt*4 -(a)*dt*4 };
     }else if (!previousState.grounded){
 //        velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,velocity.y + Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
-        currentState.velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,previousState.velocity.y + Player::Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
+        currentState.velocity = (Vector3){(w)*dt*4 -(s)*dt*4 ,previousState.velocity.y + FPS_Player::Gravity*dt*10,(d)*dt*4  -(a)*dt*4 };
     }else{
 //        velocity = (Vector3){(w)*dt*4  -(s)*dt*4 ,0,(d)*dt*4  -(a)*dt*4 };
         currentState.velocity = (Vector3){(w)*dt*4  -(s)*dt*4 ,0,(d)*dt*4  -(a)*dt*4 };
@@ -88,7 +88,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 
         temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(&currentState.camera),0.7f));
         temp.velocity = Vector3Scale(camera_direction(&currentState.camera),5.0f);
-        temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
+//        temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
         temp.alive = true;
         //TODO look into ray casting
         currentState.entities.push_back(temp);
@@ -104,7 +104,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
                 currentState.position.y = 2+topBoxVector[i].max.y;//bad code
                 currentState.camera.position.y = currentState.position.y;
                 currentState.topCollision = true;
-            }else if(Player::CheckCollision(previousState.playerBox,terrainList[i],currentState.separationVector)){ // check coliision modies passed seperationVector
+            }else if(FPS_Player::CheckCollision(previousState.playerBox,terrainList[i],currentState.separationVector)){ // check coliision modies passed seperationVector
                 currentState.position = Vector3Add(currentState.position,currentState.separationVector);
                 currentState.camera.position = currentState.position;
                 currentState.camera.target = Vector3Add(currentState.camera.target,currentState.separationVector);
@@ -114,12 +114,12 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 
     }
     //TODO: statically define hitbox (size of player) on init
-    currentState.playerBox.min = (Vector3){currentState.position.x - Player::hitbox.x/2,
-                              currentState.position.y - Player::hitbox.y/2-1.0f,
-                              currentState.position.z - Player::hitbox.z/2};
-    currentState.playerBox.max = (Vector3){currentState.position.x + Player::hitbox.x/2,
-                              currentState.position.y + Player::hitbox.y/2-0.5f,
-                              currentState.position.z + Player::hitbox.z/2};
+    currentState.playerBox.min = (Vector3){currentState.position.x - FPS_Player::hitbox.x/2,
+                              currentState.position.y - FPS_Player::hitbox.y/2-1.0f,
+                              currentState.position.z - FPS_Player::hitbox.z/2};
+    currentState.playerBox.max = (Vector3){currentState.position.x + FPS_Player::hitbox.x/2,
+                              currentState.position.y + FPS_Player::hitbox.y/2-0.5f,
+                              currentState.position.z + FPS_Player::hitbox.z/2};
 }
 
 //void Player::setCameraMode(int temp) {
@@ -127,11 +127,11 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
 //}
 
 
-Vector3 Player::camera_direction(Camera *tcamera) {
+Vector3 FPS_Player::camera_direction(Camera *tcamera) {
     return Vector3Normalize(Vector3Subtract(tcamera->target, tcamera->position));
 }
 
-void Player::updateEntities(FPSClientState& currentState, float dt) {
+void FPS_Player::updateEntities(FPSClientState& currentState, float dt) {
     for (int i = 0; i < currentState.entities.size(); i++) {
         //Vector3Subtract(entities[i].getPosition(),this->position)
         if(currentState.entities[i].alive){
@@ -162,7 +162,7 @@ void Player::updateEntities(FPSClientState& currentState, float dt) {
 
 
 
-bool Player::CheckCollision(BoundingBox playerBB, BoundingBox wallBB, Vector3& separationVector) {
+bool FPS_Player::CheckCollision(BoundingBox playerBB, BoundingBox wallBB, Vector3& separationVector) {
     // Check if the player's bounding box is not entirely to the left of the wall
     bool notLeftOfWall = playerBB.max.x >= wallBB.min.x;
     float leftSeparation = wallBB.min.x - playerBB.max.x;
@@ -208,7 +208,7 @@ bool Player::CheckCollision(BoundingBox playerBB, BoundingBox wallBB, Vector3& s
 
         return true;
     }
-
+    separationVector = {0.0f, 0.0f, 0.0f}; // Joseph added 03/19/23
     return false;
 }
 

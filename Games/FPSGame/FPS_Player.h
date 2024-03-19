@@ -20,7 +20,7 @@
 //TODO implement player collision and hitbox, potentially uI too or atleast hands and a gun
 //TODO test implementation of maps and collisions with those
 using namespace std;
-class Player {
+class FPS_Player {
 
 public:
 //    Player(Vector3 initPosition, Vector3 initVelocity, Vector3 initHitBox, float dt);
@@ -70,6 +70,9 @@ public:
 //    CircularBuffer<inputState>* getInputBuffer(){
 //        return &inputBuffer;
 //    }
+    constexpr static const Vector3 hitbox = (Vector3){1.0f,2.0f,1.0f};
+    constexpr static const float Gravity = -0.08;
+    constexpr static const float Jump = 2.0f;
 private:
 //    CircularBuffer<outputState> outputBuffer;
 //    CircularBuffer<inputState> inputBuffer;
@@ -77,10 +80,8 @@ private:
 //    struct FPSClientState currentState; // On init, currentState is shell
 //    Vector3 separationVector{};
 //    bool topCollision{};
-    constexpr static const float Gravity = -0.08;
-    constexpr static const float Jump = 2.0f;
-    constexpr static const Vector3 hitbox = (Vector3){1.0f,2.0f,1.0f};
-//    bool grounded = false;
+
+    //    bool grounded = false;
 //    BoundingBox playerBox{};
 //    float coolDown = 0;
 ////    vector<Bullet> entities = {};

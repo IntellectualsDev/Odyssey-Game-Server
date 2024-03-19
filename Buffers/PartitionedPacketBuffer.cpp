@@ -52,13 +52,13 @@ bool PartitionedPacketBuffer::pushToPartition(size_t index, unique_ptr<BufferHan
     if(index >= partitions.size()){
         return false;
     }
-    {
-        std::lock_guard<std::mutex> guard(consoleMutex); //testing
-        cout << "Added Packet w/type: " << EnumNamePacketType(packet->getPacketView()->packet_type()) << "\n\t From Address: " << packet->getPacketView()->source_point()->address() << ", Port: " << packet->getPacketView()->source_point()->port() << endl;
-        cout << "Size: " << partitions[index]->getCount()+1 << endl;
-
-//        cout << "Added Packet" << packet->label << "\ncount = " << partitions[index]->getCount()+1 << endl;
-    }
+//    {
+//        std::lock_guard<std::mutex> guard(consoleMutex); //testing
+//        cout << "Added Packet w/type: " << EnumNamePacketType(packet->getPacketView()->packet_type()) << "\n\t From Address: " << packet->getPacketView()->source_point()->address() << ", Port: " << packet->getPacketView()->source_point()->port() << endl;
+//        cout << "Size: " << partitions[index]->getCount()+1 << endl;
+//
+////        cout << "Added Packet" << packet->label << "\ncount = " << partitions[index]->getCount()+1 << endl;
+//    }
 
     return partitions[index]->push(std::move(packet));
 }
