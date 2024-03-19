@@ -19,7 +19,11 @@ struct Vector2;
 
 struct BoundingBox;
 
-struct Endpoint;
+struct SourcePoint;
+struct SourcePointBuilder;
+
+struct DestPoint;
+struct DestPointBuilder;
 
 struct Tick;
 
@@ -227,29 +231,6 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) BoundingBox FLATBUFFERS_FINAL_CLASS {
 };
 FLATBUFFERS_STRUCT_END(BoundingBox, 24);
 
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Endpoint FLATBUFFERS_FINAL_CLASS {
- private:
-  uint32_t address_;
-  uint32_t port_;
-
- public:
-  Endpoint()
-      : address_(0),
-        port_(0) {
-  }
-  Endpoint(uint32_t _address, uint32_t _port)
-      : address_(::flatbuffers::EndianScalar(_address)),
-        port_(::flatbuffers::EndianScalar(_port)) {
-  }
-  uint32_t address() const {
-    return ::flatbuffers::EndianScalar(address_);
-  }
-  uint32_t port() const {
-    return ::flatbuffers::EndianScalar(port_);
-  }
-};
-FLATBUFFERS_STRUCT_END(Endpoint, 8);
-
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Tick FLATBUFFERS_FINAL_CLASS {
  private:
   uint32_t tick_number_;
@@ -272,6 +253,132 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Tick FLATBUFFERS_FINAL_CLASS {
   }
 };
 FLATBUFFERS_STRUCT_END(Tick, 8);
+
+struct SourcePoint FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef SourcePointBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ADDRESS = 4,
+    VT_PORT = 6
+  };
+  const ::flatbuffers::String *address() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_ADDRESS);
+  }
+  uint32_t port() const {
+    return GetField<uint32_t>(VT_PORT, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_ADDRESS) &&
+           verifier.VerifyString(address()) &&
+           VerifyField<uint32_t>(verifier, VT_PORT, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct SourcePointBuilder {
+  typedef SourcePoint Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_address(::flatbuffers::Offset<::flatbuffers::String> address) {
+    fbb_.AddOffset(SourcePoint::VT_ADDRESS, address);
+  }
+  void add_port(uint32_t port) {
+    fbb_.AddElement<uint32_t>(SourcePoint::VT_PORT, port, 0);
+  }
+  explicit SourcePointBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<SourcePoint> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<SourcePoint>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<SourcePoint> CreateSourcePoint(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> address = 0,
+    uint32_t port = 0) {
+  SourcePointBuilder builder_(_fbb);
+  builder_.add_port(port);
+  builder_.add_address(address);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<SourcePoint> CreateSourcePointDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const char *address = nullptr,
+    uint32_t port = 0) {
+  auto address__ = address ? _fbb.CreateString(address) : 0;
+  return CreateSourcePoint(
+      _fbb,
+      address__,
+      port);
+}
+
+struct DestPoint FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DestPointBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ADDRESS = 4,
+    VT_PORT = 6
+  };
+  const ::flatbuffers::String *address() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_ADDRESS);
+  }
+  uint32_t port() const {
+    return GetField<uint32_t>(VT_PORT, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_ADDRESS) &&
+           verifier.VerifyString(address()) &&
+           VerifyField<uint32_t>(verifier, VT_PORT, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct DestPointBuilder {
+  typedef DestPoint Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_address(::flatbuffers::Offset<::flatbuffers::String> address) {
+    fbb_.AddOffset(DestPoint::VT_ADDRESS, address);
+  }
+  void add_port(uint32_t port) {
+    fbb_.AddElement<uint32_t>(DestPoint::VT_PORT, port, 0);
+  }
+  explicit DestPointBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<DestPoint> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<DestPoint>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<DestPoint> CreateDestPoint(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> address = 0,
+    uint32_t port = 0) {
+  DestPointBuilder builder_(_fbb);
+  builder_.add_port(port);
+  builder_.add_address(address);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<DestPoint> CreateDestPointDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const char *address = nullptr,
+    uint32_t port = 0) {
+  auto address__ = address ? _fbb.CreateString(address) : 0;
+  return CreateDestPoint(
+      _fbb,
+      address__,
+      port);
+}
 
 struct Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef Camera3DBuilder Builder;
@@ -468,7 +575,7 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
 struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ClientBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ENDPOINT = 4,
+    VT_SOURCE_POINT = 4,
     VT_TICK = 6,
     VT_CLIENT_UID = 8,
     VT_ALIVE = 10,
@@ -480,8 +587,8 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_VELOCITY = 22,
     VT_ENTITIES = 24
   };
-  const Endpoint *endpoint() const {
-    return GetStruct<const Endpoint *>(VT_ENDPOINT);
+  const SourcePoint *source_point() const {
+    return GetPointer<const SourcePoint *>(VT_SOURCE_POINT);
   }
   const Tick *tick() const {
     return GetStruct<const Tick *>(VT_TICK);
@@ -515,7 +622,8 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<Endpoint>(verifier, VT_ENDPOINT, 4) &&
+           VerifyOffset(verifier, VT_SOURCE_POINT) &&
+           verifier.VerifyTable(source_point()) &&
            VerifyField<Tick>(verifier, VT_TICK, 4) &&
            VerifyField<uint32_t>(verifier, VT_CLIENT_UID, 4) &&
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
@@ -536,8 +644,8 @@ struct ClientBuilder {
   typedef Client Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_endpoint(const Endpoint *endpoint) {
-    fbb_.AddStruct(Client::VT_ENDPOINT, endpoint);
+  void add_source_point(::flatbuffers::Offset<SourcePoint> source_point) {
+    fbb_.AddOffset(Client::VT_SOURCE_POINT, source_point);
   }
   void add_tick(const Tick *tick) {
     fbb_.AddStruct(Client::VT_TICK, tick);
@@ -582,7 +690,7 @@ struct ClientBuilder {
 
 inline ::flatbuffers::Offset<Client> CreateClient(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const Endpoint *endpoint = nullptr,
+    ::flatbuffers::Offset<SourcePoint> source_point = 0,
     const Tick *tick = nullptr,
     uint32_t client_uid = 0,
     bool alive = false,
@@ -601,7 +709,7 @@ inline ::flatbuffers::Offset<Client> CreateClient(
   builder_.add_cooldown(cooldown);
   builder_.add_client_uid(client_uid);
   builder_.add_tick(tick);
-  builder_.add_endpoint(endpoint);
+  builder_.add_source_point(source_point);
   builder_.add_grounded(grounded);
   builder_.add_sprint(sprint);
   builder_.add_alive(alive);
@@ -610,7 +718,7 @@ inline ::flatbuffers::Offset<Client> CreateClient(
 
 inline ::flatbuffers::Offset<Client> CreateClientDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const Endpoint *endpoint = nullptr,
+    ::flatbuffers::Offset<SourcePoint> source_point = 0,
     const Tick *tick = nullptr,
     uint32_t client_uid = 0,
     bool alive = false,
@@ -624,7 +732,7 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
   auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<Entity>>(*entities) : 0;
   return CreateClient(
       _fbb,
-      endpoint,
+      source_point,
       tick,
       client_uid,
       alive,
@@ -834,17 +942,21 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef OD_PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PACKET_TYPE = 4,
-    VT_ENDPOINT = 6,
-    VT_RELIABLE = 8,
-    VT_TICK = 10,
-    VT_PAYLOAD_TYPE = 12,
-    VT_PAYLOAD = 14
+    VT_DEST_POINT = 6,
+    VT_SOURCE_POINT = 8,
+    VT_RELIABLE = 10,
+    VT_TICK = 12,
+    VT_PAYLOAD_TYPE = 14,
+    VT_PAYLOAD = 16
   };
   PacketType packet_type() const {
     return static_cast<PacketType>(GetField<int8_t>(VT_PACKET_TYPE, 0));
   }
-  const Endpoint *endpoint() const {
-    return GetStruct<const Endpoint *>(VT_ENDPOINT);
+  const DestPoint *dest_point() const {
+    return GetPointer<const DestPoint *>(VT_DEST_POINT);
+  }
+  const SourcePoint *source_point() const {
+    return GetPointer<const SourcePoint *>(VT_SOURCE_POINT);
   }
   bool reliable() const {
     return GetField<uint8_t>(VT_RELIABLE, 0) != 0;
@@ -868,7 +980,10 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_PACKET_TYPE, 1) &&
-           VerifyField<Endpoint>(verifier, VT_ENDPOINT, 4) &&
+           VerifyOffset(verifier, VT_DEST_POINT) &&
+           verifier.VerifyTable(dest_point()) &&
+           VerifyOffset(verifier, VT_SOURCE_POINT) &&
+           verifier.VerifyTable(source_point()) &&
            VerifyField<uint8_t>(verifier, VT_RELIABLE, 1) &&
            VerifyField<Tick>(verifier, VT_TICK, 4) &&
            VerifyField<uint8_t>(verifier, VT_PAYLOAD_TYPE, 1) &&
@@ -893,8 +1008,11 @@ struct OD_PacketBuilder {
   void add_packet_type(PacketType packet_type) {
     fbb_.AddElement<int8_t>(OD_Packet::VT_PACKET_TYPE, static_cast<int8_t>(packet_type), 0);
   }
-  void add_endpoint(const Endpoint *endpoint) {
-    fbb_.AddStruct(OD_Packet::VT_ENDPOINT, endpoint);
+  void add_dest_point(::flatbuffers::Offset<DestPoint> dest_point) {
+    fbb_.AddOffset(OD_Packet::VT_DEST_POINT, dest_point);
+  }
+  void add_source_point(::flatbuffers::Offset<SourcePoint> source_point) {
+    fbb_.AddOffset(OD_Packet::VT_SOURCE_POINT, source_point);
   }
   void add_reliable(bool reliable) {
     fbb_.AddElement<uint8_t>(OD_Packet::VT_RELIABLE, static_cast<uint8_t>(reliable), 0);
@@ -922,7 +1040,8 @@ struct OD_PacketBuilder {
 inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     PacketType packet_type = PacketType_CreateLobby,
-    const Endpoint *endpoint = nullptr,
+    ::flatbuffers::Offset<DestPoint> dest_point = 0,
+    ::flatbuffers::Offset<SourcePoint> source_point = 0,
     bool reliable = false,
     const Tick *tick = nullptr,
     PacketPayload payload_type = PacketPayload_NONE,
@@ -930,7 +1049,8 @@ inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
   OD_PacketBuilder builder_(_fbb);
   builder_.add_payload(payload);
   builder_.add_tick(tick);
-  builder_.add_endpoint(endpoint);
+  builder_.add_source_point(source_point);
+  builder_.add_dest_point(dest_point);
   builder_.add_payload_type(payload_type);
   builder_.add_reliable(reliable);
   builder_.add_packet_type(packet_type);
