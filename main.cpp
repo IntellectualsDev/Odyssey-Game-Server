@@ -5,20 +5,24 @@
 #include "Buffers/PacketBuffer.h"
 #include "Buffers/LIFOCircularBuffer.h"
 #include "Components/GameLobby.h"
+#include "Components/Gateway.h"
+#include "Components/Transmitter.h"
 
 #include <mutex>
 mutex consoleMutex;
 
-void producer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int startId, int endId) {
-    for (int i = startId; i <= endId; ++i) {
-        ENetPacket* enetPacket = enet_packet_create(&i, sizeof(i), ENET_PACKET_FLAG_RELIABLE);
-        auto packet = make_unique<Packet>("Packet " + to_string(i), enetPacket);
-//        cout << "Producer put packet with label" << packet->label << endl;
-
-        buffer.pushToPartition(partitionIndex, move(packet));
-        this_thread::sleep_for(chrono::milliseconds(10));
-    }
-}
+//    ______________________________________________________________________________________________
+//void producer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int startId, int endId) {
+//    for (int i = startId; i <= endId; ++i) {
+//        ENetPacket* enetPacket = enet_packet_create(&i, sizeof(i), ENET_PACKET_FLAG_RELIABLE);
+//        auto packet = make_unique<Packet>("Packet " + to_string(i), enetPacket);
+////        cout << "Producer put packet with label" << packet->label << endl;
+//
+//        buffer.pushToPartition(partitionIndex, move(packet));
+//        this_thread::sleep_for(chrono::milliseconds(10));
+//    }
+//}
+//    ______________________________________________________________________________________________
 
 //void consumer(PartitionedPacketBuffer& buffer, size_t partitionIndex, int numPackets){
 //    for(int i = 0; i < numPackets; i++){
@@ -60,33 +64,48 @@ int main() {
     }
     atexit (enet_deinitialize);
 
+    PartitionedPacketBuffer* receiveBuffer = new PartitionedPacketBuffer(100, 500, consoleMutex);
+    PacketBuffer* outputBuffer = new PacketBuffer();
+
+    //create the ENetHost here for Transmitter, and ENetAddress corresponding to the host here
+
+    auto gateway = new Gateway("", 5450, receiveBuffer);
+    auto transmitter = new Transmitter("", 5450, outputBuffer);
+
+    GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex);
+
+    gateway->start();
+    transmitter->start();
+    gameLobby.start();
+
+
 //    ______________________________________________________________________________________________
-
-    const size_t bufferSize = 100;
-    const size_t numPartitions = 3;
-    PartitionedPacketBuffer receiveBuffer(numPartitions, bufferSize, consoleMutex);
-    PacketBuffer outputBuffer;
-
-    GameLobby lobby(receiveBuffer, outputBuffer, consoleMutex);
-    auto partitionIndex = lobby.getPartitionIndex();
-
-//    auto partition1 = receiveBuffer.allocatePartition().value_or(-1);
-
-    if (partitionIndex == -1) {
-        std::cerr << "Failed to allocate partition" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    lobby.start();
-
-    // Start producer to simulate packet creation
-    std::thread producerThread(producer, std::ref(receiveBuffer), partitionIndex, 1, 50);
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-    producerThread.join();
-    std::this_thread::sleep_for(std::chrono::seconds(5)); // Give some time for processing
-    lobby.stop();
-
-    return 0;
+//
+//    const size_t bufferSize = 100;
+//    const size_t numPartitions = 3;
+//    PartitionedPacketBuffer receiveBuffer(numPartitions, bufferSize, consoleMutex);
+//    PacketBuffer outputBuffer;
+//
+//    GameLobby lobby(receiveBuffer, outputBuffer, consoleMutex);
+//    auto partitionIndex = lobby.getPartitionIndex();
+//
+////    auto partition1 = receiveBuffer.allocatePartition().value_or(-1);
+//
+//    if (partitionIndex == -1) {
+//        std::cerr << "Failed to allocate partition" << std::endl;
+//        return EXIT_FAILURE;
+//    }
+//
+//    lobby.start();
+//
+//    // Start producer to simulate packet creation
+//    std::thread producerThread(producer, std::ref(receiveBuffer), partitionIndex, 1, 50);
+//    std::this_thread::sleep_for(std::chrono::seconds(5));
+//    producerThread.join();
+//    std::this_thread::sleep_for(std::chrono::seconds(5)); // Give some time for processing
+//    lobby.stop();
+//
+//    return 0;
 
 //    ______________________________________________________________________________________________
 //    auto partition2 = buffer.allocatePartition().value_or(-1);

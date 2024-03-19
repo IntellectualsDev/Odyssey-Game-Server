@@ -3,9 +3,13 @@
 //
 
 #include "Gateway.h"
+#include "../Development Env/flatbuffers/include/flatbuffers/flatbuffers.h"
+#include "../game_state_generated.h"
+#include "../Data Structs/BufferHandler.h"
+#include <memory>
 
-Gateway::Gateway(std::string gatewayIP, int gatewayPort, int maxConnections, int numChannels, int incomingBandwith,
-                 int outgoingBandwith, PacketBuffer &buffer) : receiveBuffer(buffer) {
+Gateway::Gateway(std::string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, int maxConnections, int numChannels, int incomingBandwith,
+                 int outgoingBandwith) : receiveBuffer(buffer) {
     char* serverAddressChar = new char[gatewayIP.length()+1]; // convert string IP to char * used in enet set host ip
     strcpy(serverAddressChar, gatewayIP.c_str());
     printf("char array for Gateway Server = %s\n", serverAddressChar);
@@ -59,23 +63,36 @@ void Gateway::networkLoop() {
         while (enet_host_service(server, &event, 0) > 0) {
             switch (event.type) {
                 case ENET_EVENT_TYPE_CONNECT:
-                    //TODO: Save IP temporarily & Add as ENet peer but flag the peer as NOT authenticated
                     printf("A new client connected from %x:%u.\n", event.peer->address.host, event.peer->address.port);
                     break;
 
                 case ENET_EVENT_TYPE_RECEIVE: {
                     //TODO: Pass to the middle buffer, if NEW CLIENT slaves will translate IP to MAC ID if authenticated
+                    auto odPacket = GetOD_Packet(event.packet->data);
+                    if(!odPacket){
+                        cerr << "Invalid Packet: No serial Data" << endl;
+                        break;
+                    }
 
-                    unique_ptr<Packet> packet = make_unique<Packet>("Some Label", event.packet);
-                    receiveBuffer.addPacket(std::move(packet));
+                    // TODO: Unravel the serialized bytes and read the lobby_number field and then call pushToPartition(int lobby_number):
+                    auto lobbyNumber = odPacket->lobby_number();
+                    cout << "A packet of length " << event.packet->dataLength << " was received from " << odPacket->source_point()->address() << ", " << odPacket->source_point()->port() << endl;
 
-                    printf("A packet of length %u containing %s was received from %s on channel %u.\n\tIt was added to receive buffer\n",
-                           event.packet->dataLength,
-                           event.packet->data,
-                           event.peer->data,
-                           event.channelID);
-                    /* Clean up the packet now that we're done using it. */
-//                    enet_packet_destroy(event.packet);
+                    if(receiveBuffer->partitionExists(lobbyNumber)){
+                        //copy the bytes from EnetPacket into a temp, because that previous pointer to a byte array is managed by Enet, so we can't simply steal that pointer
+                        std::unique_ptr<uint8_t[]> bufferCopy(new uint8_t[event.packet->dataLength]);
+                        memcpy(bufferCopy.get(), event.packet->data, event.packet->dataLength);
+                        unique_ptr<BufferHandler> packetBufferHandler = std::make_unique<BufferHandler>(std::move(bufferCopy), event.packet->dataLength);
+                        receiveBuffer->pushToPartition(lobbyNumber, std::move(packetBufferHandler));
+
+                        cout << "Added to Lobby #" << lobbyNumber << "'s partition" << endl;
+                    }
+                    else{
+                        cerr << "Lobby #" << lobbyNumber << " does not exist." << endl;
+                    }
+
+                    // Clean up the packet now that we're done using it
+                    enet_packet_destroy(event.packet);
                     break;
                 }
 

@@ -22,23 +22,23 @@ using namespace std;
 
 class GameLobby {
 public:
-    GameLobby(PartitionedPacketBuffer& receiveBuffer, PacketBuffer& outputBuffer, mutex& consoleMutex);
+    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, mutex& consoleMutex);
+//    GameLobby(LobbyManagementService& lobbyManagementService): LobbyServices(lobbyManagementService){};
     void start();
     void stop();
-
-private:
-    void run();
-    void processPacket(unique_ptr<Packet> packet);
-    void update();
-    void sendSnapShot();
-
-    LobbyManagementService LobbyServices;
-
-    size_t partitionIndex;
-public:
     size_t getPartitionIndex() const;
 
 private:
+    void run();
+    void processPacket(unique_ptr<BufferHandler> packet);
+    void update();
+    void sendSnapShot();
+
+//    LobbyManagementService* LobbyServices;
+    PartitionedPacketBuffer* receiveBuffer;
+    PacketBuffer* outputBuffer;
+
+    size_t partitionIndex;
 
     atomic<bool> stopFlag;
     thread workerThread;
@@ -47,8 +47,6 @@ private:
     const float tickRate = 60.0f;
 //    const float secondPerTick = 1.0f / tickRate;
     std::chrono::steady_clock::time_point lastTick;
-
-
 
     mutex& consoleMutex;
 };

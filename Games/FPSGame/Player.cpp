@@ -118,7 +118,7 @@ void Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& current
                               currentState.position.y - Player::hitbox.y/2-1.0f,
                               currentState.position.z - Player::hitbox.z/2};
     currentState.playerBox.max = (Vector3){currentState.position.x + Player::hitbox.x/2,
-                              currentState.position.y + Player:hitbox.y/2-0.5f,
+                              currentState.position.y + Player::hitbox.y/2-0.5f,
                               currentState.position.z + Player::hitbox.z/2};
 }
 

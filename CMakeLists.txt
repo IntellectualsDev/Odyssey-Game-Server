@@ -38,8 +38,6 @@ add_executable(Odyssey_Game_Server main.cpp
 
         Buffers/PacketBuffer.h
         Buffers/PacketBuffer.cpp
-        Components/ExecutorSlave.h
-        Components/ExecutorSlave.cpp
         Components/Gateway.h
         Components/Gateway.cpp
         Components/Transmitter.h
@@ -62,7 +60,7 @@ add_executable(Odyssey_Game_Server main.cpp
         Games/FPSGame/Player.cpp
         Games/FPSGame/Player.h
         Games/FPSGame/Game.h
-        Games/FPSGame/Game.cpp)
+        Games/FPSGame/Game.cpp "Data Structs/BufferHandler.h")
     # TODO: Don't forget to add the encryption files when completed
 
 # Link against the ENet library. It informs CMake that the executable needs to be linked with ENet library

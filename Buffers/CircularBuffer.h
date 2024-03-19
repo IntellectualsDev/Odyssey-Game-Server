@@ -15,8 +15,10 @@
 #include <memory>
 #include <condition_variable>
 
-#include "../Buffers/PacketBuffer.h"
-#include "../Templates/ThreadSafeData.h"
+#include "../game_state_generated.h"
+#include "../Data Structs/BufferHandler.h"
+//#include "../Buffers/PacketBuffer.h"
+//#include "../Templates/ThreadSafeData.h"
 
 using namespace std;
 
@@ -24,9 +26,11 @@ class CircularBuffer {
 public:
     explicit CircularBuffer(size_t capacity);
 
-    bool push(std::unique_ptr<Packet> packet);
+    bool push(std::unique_ptr<BufferHandler> packet);
 
-    std::unique_ptr<Packet> pop();
+    std::unique_ptr<BufferHandler> pop();
+
+    std::optional<vector<unique_ptr<BufferHandler>>> popAll();
 
     void resetBuffer();
 
@@ -38,7 +42,7 @@ public:
 
 
 private:
-    std::vector<std::unique_ptr<Packet>> buffer;
+    std::vector<std::unique_ptr<BufferHandler>> buffer;
 
     mutable std::mutex mutex;
     std::condition_variable not_empty;

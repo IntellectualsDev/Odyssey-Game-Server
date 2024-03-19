@@ -7,7 +7,7 @@
 
 #include <optional>
 #include <set>
-#include "../Templates/ThreadSafeData.h"
+#include "../Data Structs/BufferHandler.h"
 #include "PacketBuffer.h"
 #include "CircularBuffer.h"
 #include <mutex>
@@ -16,20 +16,24 @@
 
 using namespace std;
 
-class PartitionedPacketBuffer : public ThreadSafeData{
+class PartitionedPacketBuffer{
 public:
     PartitionedPacketBuffer(size_t numPartitions, size_t bufferSize, std::mutex& consoleMutex);
 
     // TODO: Allocate partition (include reuse parition func)
     std::optional<size_t> allocatePartition();
 
+    bool partitionExists(size_t index);
+
     // TODO: Free allocated partition
     void freePartition(size_t index);
 
     // TODO: push/pop from partitions
-    bool pushToPartition(size_t index, unique_ptr<Packet> packet);
+    bool pushToPartition(size_t index, unique_ptr<BufferHandler> packet);
 
-    unique_ptr<Packet> popFromPartition(size_t index);
+    unique_ptr<BufferHandler> popFromPartition(size_t index);
+
+    std::optional<vector<unique_ptr<BufferHandler>>> popAllFromPartition(size_t index);
 
     void notifyAllOnPartition(size_t index);
 

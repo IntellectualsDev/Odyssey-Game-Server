@@ -5,9 +5,12 @@
 #include "GameLobby.h"
 #include "../game_state_generated.h"
 
-GameLobby::GameLobby(PartitionedPacketBuffer &receiveBuffer, PacketBuffer &outputBuffer, mutex& consoleMutex) : LobbyServices(receiveBuffer, outputBuffer), consoleMutex(consoleMutex) {
+//GameLobby::GameLobby(PartitionedPacketBuffer &receiveBuffer, PacketBuffer &outputBuffer, mutex& consoleMutex) : LobbyServices(receiveBuffer, outputBuffer), consoleMutex(consoleMutex) {
+GameLobby::GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, std::mutex &consoleMutex): receiveBuffer(receiveBuffer), outputBuffer(outputBuffer), consoleMutex(consoleMutex){
     // Create a receive buffer partition
-    auto index = LobbyServices.createReceiveBufferPartition();
+
+    //    auto index = LobbyServices.createReceiveBufferPartition();
+    auto index = receiveBuffer->allocatePartition();
 
     if(index.has_value()){
         this->partitionIndex = index.value();
@@ -25,7 +28,8 @@ void GameLobby::start() {
 
 void GameLobby::stop() {
     stopFlag.store(true);
-    LobbyServices.notifyAllOnPartition(partitionIndex);
+    receiveBuffer->notifyAllOnPartition(partitionIndex);
+//    LobbyServices.notifyAllOnPartition(partitionIndex);
 
     if(workerThread.joinable()){
         workerThread.join();
@@ -44,20 +48,16 @@ void GameLobby::run() {
             cout << "Entering tick " << tickNumber << std::endl;
         }
 
+        auto temp = receiveBuffer->popAllFromPartition(partitionIndex);
 
-        while(std::chrono::steady_clock::now() < nextTick){
-            auto packet = LobbyServices.popFromReceiveBufferParition(partitionIndex);
-            if(packet){
-                {
-                    std::lock_guard<std::mutex> guard(consoleMutex);
-                    std::cout << "Processing " << packet->label << " in tick " << tickNumber << std::endl;
+        if(temp.has_value()){
+            vector<unique_ptr<BufferHandler>> currentTickPackets = std::move(temp.value());
+            if(!currentTickPackets.empty()){
+                for(int i = 0; i < currentTickPackets.size(); i++){
+                    processPacket(std::move(currentTickPackets[i]));
                 }
-//                processPacket(std::move(packet)); // TODO: this will update the global game state
-            } else{
-                continue; // no more packets left
             }
         }
-
 
         auto now = std::chrono::steady_clock::now();
         auto timeRemaining = nextTick - now;
@@ -66,22 +66,48 @@ void GameLobby::run() {
             cout << "Remaining time in tick: " << tickNumber << ":\n\t"
                  << std::chrono::duration_cast<std::chrono::milliseconds>(nextTick - now).count() << " ms" << endl;
         }
+
         sendSnapShot();
         tickNumber++;
         if ( timeRemaining > std::chrono::milliseconds(0)){
             std::this_thread::sleep_for(timeRemaining);
         }
 
+//        while(std::chrono::steady_clock::now() < nextTick){
+//            auto packet = LobbyServices.popFromReceiveBufferParition(partitionIndex);
+//            if(packet){
+//                {
+//                    std::lock_guard<std::mutex> guard(consoleMutex);
+//                    std::cout << "Processing " << packet->label << " in tick " << tickNumber << std::endl;
+//                }
+////                processPacket(std::move(packet)); // TODO: this will update the global game state
+//            } else{
+//                continue; // no more packets left
+//            }
+//        }
+//
+//
+//        auto now = std::chrono::steady_clock::now();
+//        auto timeRemaining = nextTick - now;
+//        {
+//            std::lock_guard<std::mutex> guard(consoleMutex);
+//            cout << "Remaining time in tick: " << tickNumber << ":\n\t"
+//                 << std::chrono::duration_cast<std::chrono::milliseconds>(nextTick - now).count() << " ms" << endl;
+//        }
+//        sendSnapShot();
+//        tickNumber++;
+//        if ( timeRemaining > std::chrono::milliseconds(0)){
+//            std::this_thread::sleep_for(timeRemaining);
+//        }
+
     }
-
-
-
 }
 
-void GameLobby::processPacket(unique_ptr<Packet> packet) {
+void GameLobby::processPacket(unique_ptr<BufferHandler> packet) {
     {
         std::lock_guard<std::mutex> guard(consoleMutex);
-        printf("Game Lobby received packet of size %zu and data = \"%s\"\n\n", packet->packet->dataLength, packet->packet->data);
+        cout << "Packet Info: Label = "  << EnumNamePacketType(packet->getPacketView()->packet_type()) << "\n source point: " << packet->getPacketView()->source_point()->address() << ", " << packet->getPacketView()->source_point()->port() << endl;
+        cout << "W: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
     }
 
 
