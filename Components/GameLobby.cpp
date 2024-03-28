@@ -12,7 +12,7 @@ GameLobby::GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outpu
         InitWindow(0, 0, "Shooter Game");
         screenWidth = GetMonitorWidth(0);
         screenHeight = GetMonitorHeight(0);
-        CloseWindow();
+        RL_CloseWindow();
         InitWindow(screenWidth-400, screenHeight-400, "Shooter Game");
         //set fps
         SetTargetFPS(60);
@@ -123,7 +123,7 @@ void GameLobby::run() {
 //        }
 
     }
-    CloseWindow();
+    RL_CloseWindow();
 }
 
 void GameLobby::processPacket(unique_ptr<BufferHandler> packet) {

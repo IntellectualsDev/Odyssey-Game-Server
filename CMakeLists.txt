@@ -1,17 +1,10 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.22.3)
 project(Odyssey_Game_Server)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-# Add the path to ENet header files, an explicit path to the .h files is not required, CMake will find them
-include_directories(/usr/local/include)
 
-include_directories("/Users/anshulgowda/Documents/CODE/Odyssey/Odyssey-Game-Server/Development Env/flatbuffers/include")
-
-# Add the path to ENet library
-link_directories(/usr/local/lib)
-
-link_directories(/usr/local/bin)
 
 set(RAYLIB_VERSION 5.0)
 find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
@@ -30,7 +23,16 @@ if (NOT raylib_FOUND) # If there's none, fetch and build raylib
         add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
     endif()
 endif()
+include_directories("C:/Users/Joseph/Desktop/Odyssey-Game-Server/Development Env/flatbuffers/include")
+include_directories("C:/Users/Joseph/Desktop/Odyssey-Game-Server/Development Env/Enet Headers/include")
+link_directories(C:/Users/Joseph/Desktop/Odyssey-Game-Server/Dev_Libs/"Dev_Libs")
 
+find_library(ENET_LIBRARY NAMES enet.lib PATHS "Dev_Libs")
+if(NOT ENET_LIBRARY)
+    MESSAGE(FATAL_ERROR "ENet library not found")
+endif()
+
+message(STATUS "ENet library found: ${ENET_LIBRARY}")
 
 add_executable(Odyssey_Game_Server main.cpp
         Servers/GameServer.h
@@ -65,5 +67,7 @@ add_executable(Odyssey_Game_Server main.cpp
 
 # Link against the ENet library. It informs CMake that the executable needs to be linked with ENet library
 # and that it is a required dependency
-target_link_libraries(Odyssey_Game_Server enet)
+#target_link_libraries(Odyssey_Game_Server enet)
 target_link_libraries(${PROJECT_NAME} raylib)
+target_link_libraries(${PROJECT_NAME} ${ENET_LIBRARY} ws2_32 winmm)
+
