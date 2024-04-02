@@ -86,8 +86,8 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
 //                    true);
         struct FPSEntityState temp;
 
-        temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(&currentState.camera),0.7f));
-        temp.velocity = Vector3Scale(camera_direction(&currentState.camera),5.0f);
+        temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(currentState.camera),0.7f));
+        temp.velocity = Vector3Scale(camera_direction(currentState.camera),5.0f);
 //        temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
         temp.alive = true;
         //TODO look into ray casting
@@ -110,9 +110,9 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
                 currentState.camera.target = Vector3Add(currentState.camera.target,currentState.separationVector);
             }
         }
-
-
     }
+
+
     //TODO: statically define hitbox (size of player) on init
     currentState.playerBox.min = (Vector3){currentState.position.x - FPS_Player::hitbox.x/2,
                               currentState.position.y - FPS_Player::hitbox.y/2-1.0f,
@@ -127,8 +127,8 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
 //}
 
 
-Vector3 FPS_Player::camera_direction(Camera *tcamera) {
-    return Vector3Normalize(Vector3Subtract(tcamera->target, tcamera->position));
+Vector3 FPS_Player::camera_direction(Camera& tcamera) {
+    return Vector3Normalize(Vector3Subtract(tcamera.target, tcamera.position));
 }
 
 void FPS_Player::updateEntities(FPSClientState& currentState, float dt) {
@@ -157,7 +157,8 @@ void FPS_Player::updateEntities(FPSClientState& currentState, float dt) {
 
     }
 //    coolDown -= dt*2;
-    currentState.coolDown -= dt*2;
+    currentState.coolDown = currentState.coolDown <= 0 ? 0 : currentState.coolDown - dt*2;
+//    currentState.coolDown -= dt*2;
 }
 
 

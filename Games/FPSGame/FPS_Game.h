@@ -17,9 +17,9 @@ public:
     void calculateDeltas();
     void updatePreviousStates();
     void endGame(); // TODO: later
-    FPSClientState* getPlayerCurrentState(size_t index);
-    FPSClientState* getPlayerPreviousState(size_t index);
-    FPSClientState* getPlayerCumulativeState(size_t index);
+    unique_ptr<FPSClientState> getPlayerCurrentState(size_t index);
+    unique_ptr<FPSClientState> getPlayerPreviousState(size_t index);
+    unique_ptr<FPSClientState> getPlayerCumulativeState(size_t index);
 
     static const float getWallWidth();
 
@@ -29,17 +29,17 @@ public:
 
     static const float getFloorLength();
 
-    static const vector<FPSClientState> &getBuffer();
+//    static const vector<FPSClientState> &getBuffer();
 
     static const vector<BoundingBox> &getTerrainVector();
 
     static const vector<BoundingBox> &getTopBoxVector();
 
-    const vector<FPSClientState *> &getPreviousStatesOfPlayers() const;
+    const vector<unique_ptr<FPSClientState>> &getPreviousStatesOfPlayers() const;
 
-    const vector<FPSClientState *> &getCurrentStatesOfPlayers() const;
+    const vector<unique_ptr<FPSClientState>> &getCurrentStatesOfPlayers() const;
 
-    const vector<FPSClientState *> &getCumulativeDeltaStatesPlayers() const;
+    const vector<unique_ptr<FPSClientState>> &getCumulativeDeltaStatesPlayers() const;
 
 private:
     static constexpr const float wallWidth = 1.0f;
@@ -50,9 +50,9 @@ private:
     static std::vector<BoundingBox> terrainVector;
     static std::vector<BoundingBox> topBoxVector;
 
-    vector<FPSClientState*> previousStatesOfPlayers;
-    vector<FPSClientState*> currentStatesOfPlayers;
-    vector<FPSClientState*> cumulativeDeltaStatesPlayers;
+    vector<unique_ptr<FPSClientState>> previousStatesOfPlayers;
+    vector<unique_ptr<FPSClientState>> currentStatesOfPlayers;
+    vector<unique_ptr<FPSClientState>> cumulativeDeltaStatesPlayers;
 
 };
 

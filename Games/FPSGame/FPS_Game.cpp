@@ -26,31 +26,38 @@ void printCamera3D(const Camera3D& camera) {
 }
 
 // The structured print method for FPSClientState
-void printFPSClientState(FPSClientState *state) {
+void printFPSClientState(FPSClientState& state) {
     std::cout << "FPSClientState {" << std::endl;
-    std::cout << "  dt: " << state->dt << std::endl;
+    std::cout << "  dt: " << state.dt << std::endl;
     std::cout << "  SeparationVector: ";
-    printVector3(state->separationVector);
+    printVector3(state.separationVector);
     std::cout << std::endl;
-    std::cout << "  TopCollision: " << std::boolalpha << state->topCollision << std::endl;
-    std::cout << "  Grounded: " << state->grounded << std::endl;
-    std::cout << "  Space: " << state->space << std::endl;
+    std::cout << "  TopCollision: " << std::boolalpha << state.topCollision << std::endl;
+    std::cout << "  Grounded: " << state.grounded << std::endl;
+    std::cout << "  Space: " << state.space << std::endl;
     std::cout << "  PlayerBox: ";
-    printBoundingBox(state->playerBox);
+    printBoundingBox(state.playerBox);
     std::cout << std::endl;
-    std::cout << "  CoolDown: " << state->coolDown << std::endl;
-    std::cout << "  Entities: [size=" << state->entities.size() << "]" << std::endl; // Detailed entity printing can be added here
+    std::cout << "  CoolDown: " << state.coolDown << std::endl;
+    std::cout << "  Entities: [size=" << state.entities.size() << "]" << std::endl; // Detailed entity printing can be added here
+    for(auto entity : state.entities){
+        cout << "\tPosition: ";
+        printVector3(entity.position);
+        cout << endl <<  "\tVelocity: ";
+        printVector3(entity.velocity);
+        cout << endl << "\tEntity Alive: " << entity.alive << endl;
+    }
     std::cout << "  Camera: ";
-    printCamera3D(state->camera);
+    printCamera3D(state.camera);
     std::cout << std::endl;
     std::cout << "  Position: ";
-    printVector3(state->position);
+    printVector3(state.position);
     std::cout << std::endl;
     std::cout << "  Velocity: ";
-    printVector3(state->velocity);
+    printVector3(state.velocity);
     std::cout << std::endl;
-    std::cout << "  Alive: " << state->alive << std::endl;
-    std::cout << "  CameraMode: " << state->cameraMode << std::endl;
+    std::cout << "  Alive: " << state.alive << std::endl;
+    std::cout << "  CameraMode: " << state.cameraMode << std::endl;
     std::cout << "}" << std::endl;
 }
 
@@ -114,16 +121,17 @@ size_t FPS_Game::createNewPlayer(Vector3 initPosition, Vector3 initVelocity, flo
     for (int i = 0; i < previousStatesOfPlayers.size(); i++) {
         if (previousStatesOfPlayers[i] == nullptr){
             slotFound = true;
-            previousStatesOfPlayers[i] = &previousState;
-            currentStatesOfPlayers[i] = &currentState;
+            previousStatesOfPlayers[i] = make_unique<FPSClientState>(previousState);
+            currentStatesOfPlayers[i] = make_unique<FPSClientState>(currentState);
+            cumulativeDeltaStatesPlayers[i] = make_unique<FPSClientState>(cumulativeState);
             index = i;
             break;
         }
     }
     if(!slotFound){
-        previousStatesOfPlayers.push_back(&previousState);
-        currentStatesOfPlayers.push_back(&currentState);
-        cumulativeDeltaStatesPlayers.push_back(&cumulativeState);
+        previousStatesOfPlayers.push_back(make_unique<FPSClientState>(previousState));
+        currentStatesOfPlayers.push_back(make_unique<FPSClientState>(currentState));
+        cumulativeDeltaStatesPlayers.push_back(make_unique<FPSClientState>(cumulativeState));
         index = previousStatesOfPlayers.size() - 1;
     }
 
@@ -145,7 +153,20 @@ void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,V
                              sprint,
                              crouch);
     }
-    printFPSClientState(currentStatesOfPlayers[playerIndex]);
+
+    // check for collisions and seperate between host player (init function call) and all other players
+    for(int i = 0; i < currentStatesOfPlayers.size(); i++){
+        if(i != playerIndex && previousStatesOfPlayers[i] != nullptr){
+            if(FPS_Player::CheckCollision(previousStatesOfPlayers[playerIndex]->playerBox,previousStatesOfPlayers[i]->playerBox, currentStatesOfPlayers[playerIndex]->separationVector)){
+                cout << "In Player " << playerIndex << " updatePlayer()\n\tCollision detected with player " << i << endl;
+                currentStatesOfPlayers[playerIndex]->position = Vector3Add(currentStatesOfPlayers[playerIndex]->position,currentStatesOfPlayers[playerIndex]->separationVector);
+                currentStatesOfPlayers[playerIndex]->camera.position = currentStatesOfPlayers[playerIndex]->position;
+                currentStatesOfPlayers[playerIndex]->camera.target = Vector3Add(currentStatesOfPlayers[playerIndex]->camera.target,currentStatesOfPlayers[playerIndex]->separationVector);
+            }
+        }
+    }
+
+    printFPSClientState(*currentStatesOfPlayers[playerIndex]);
    //call Player's static method using the current and previous state's using the player index:  Player::UpdatePlayer()
 }
 
@@ -165,6 +186,7 @@ void FPS_Game::checkEntityCollisions() {
                     cout << "Bullet Hit terrain: " << currentStatesOfPlayers[j]->entities[k].position.x << ", " << currentStatesOfPlayers[j]->entities[k].position.y << ", " << currentStatesOfPlayers[j]->entities[k].position.z << endl;
                     currentStatesOfPlayers[j]->entities[k].alive = false;
                 }
+
             }
         }
     }
@@ -209,31 +231,63 @@ void FPS_Game::calculateDeltas() {
         cumulativeDeltaStatesPlayers[i]->alive = currentStatesOfPlayers[i]->alive;
         // skip sending the camera perspective
 
+
+
         // calculate the entities' delta values
+        // If the deltas and current state have mismatched size, resize delta to match and fill with default states
+        cout << "i = " << i << ", Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;
+
+        size_t oldSize = cumulativeDeltaStatesPlayers[i]->entities.size();
+        cout << "old Size: " << oldSize << endl;
+        if(oldSize < currentStatesOfPlayers[i]->entities.size()){
+            cumulativeDeltaStatesPlayers[i]->entities.resize(currentStatesOfPlayers[i]->entities.size());
+
+            for(int j = oldSize; j < currentStatesOfPlayers[i]->entities.size(); j++){
+                cumulativeDeltaStatesPlayers[i]->entities[j] = FPSEntityState();
+            }
+        }
 
         for(int j = 0; j < currentStatesOfPlayers[i]->entities.size(); j++){
+//            cout << "Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;
             // skip bullet model as it is static
+
             cumulativeDeltaStatesPlayers[i]->entities[j].alive = currentStatesOfPlayers[i]->entities[j].alive;
-            cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = {Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.min, previousStatesOfPlayers[i]->entities[j].bulletBox.min),
-                                                                      Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.max, previousStatesOfPlayers[i]->entities[j].bulletBox.max)};
-            cumulativeDeltaStatesPlayers[i]->entities[j].position = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].position, previousStatesOfPlayers[i]->entities[j].position);
-            cumulativeDeltaStatesPlayers[i]->entities[j].velocity = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].velocity, previousStatesOfPlayers[i]->entities[j].velocity);
+            cout << "Break 1 , i = " << i << ", j = "  << j << endl;
+
+            if(previousStatesOfPlayers[i]->entities.size() < currentStatesOfPlayers[i]->entities.size()){
+                cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = {Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.min, Vector3 {0, 0, 0}),
+                                                                          Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.max, Vector3 {0, 0, 0})};
+                cumulativeDeltaStatesPlayers[i]->entities[j].position = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].position, Vector3 {0, 0, 0});
+                cumulativeDeltaStatesPlayers[i]->entities[j].velocity = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].velocity, Vector3 {0, 0, 0});
+            }
+            else{
+                cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = {Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.min, previousStatesOfPlayers[i]->entities[j].bulletBox.min),
+                                                                          Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.max, previousStatesOfPlayers[i]->entities[j].bulletBox.max)};
+                cout << "Break 2 , i = " << i << ", j = "  << j << endl;
+                cumulativeDeltaStatesPlayers[i]->entities[j].position = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].position, previousStatesOfPlayers[i]->entities[j].position);
+                cout << "Break 3 , i = " << i << ", j = "  << j << endl;
+                cumulativeDeltaStatesPlayers[i]->entities[j].velocity = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].velocity, previousStatesOfPlayers[i]->entities[j].velocity);
+                cout << "Break 4 , i = " << i << ", j = "  << j << endl;
+            }
+//            cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = BoundingBox {Vector3 {0, 0, 0}, Vector3 {0, 0, 0}};
             // entity's hitbox is static, so no update is required.
         }
-        return;
+        cout << "Finished calculating Deltas " << endl;
     }
+
+    printFPSClientState(*cumulativeDeltaStatesPlayers[0]);
 }
 
 void FPS_Game::updatePreviousStates() {
     for(int i = 0; i < previousStatesOfPlayers.size(); i++){
         if(currentStatesOfPlayers[i] != nullptr){
             if(previousStatesOfPlayers[i] == nullptr) {
-                previousStatesOfPlayers[i] = new FPSClientState();
+                previousStatesOfPlayers[i] = make_unique<FPSClientState>();
             }
             *previousStatesOfPlayers[i] = *currentStatesOfPlayers[i];
         }
         else{
-            delete previousStatesOfPlayers[i]; // CAUSES ISSUES!
+//            delete previousStatesOfPlayers[i]; // CAUSES ISSUES!
             previousStatesOfPlayers[i] = nullptr;
         }
 
@@ -246,12 +300,12 @@ void FPS_Game::updatePreviousStates() {
     }
 }
 
-FPSClientState *FPS_Game::getPlayerCurrentState(size_t index) {
-    return currentStatesOfPlayers[index];
+unique_ptr<FPSClientState> FPS_Game::getPlayerCurrentState(size_t index) {
+    return std::move(currentStatesOfPlayers[index]);
 }
 
-FPSClientState *FPS_Game::getPlayerPreviousState(size_t index) {
-    return previousStatesOfPlayers[index];
+unique_ptr<FPSClientState> FPS_Game::getPlayerPreviousState(size_t index) {
+    return std::move(previousStatesOfPlayers[index]);
 }
 
 const float FPS_Game::getWallWidth() {
@@ -282,15 +336,15 @@ const vector<BoundingBox> &FPS_Game::getTopBoxVector() {
     return topBoxVector;
 }
 
-const vector<FPSClientState *> &FPS_Game::getPreviousStatesOfPlayers() const {
+const vector<unique_ptr<FPSClientState>> &FPS_Game::getPreviousStatesOfPlayers() const {
     return previousStatesOfPlayers;
 }
 
-const vector<FPSClientState *> &FPS_Game::getCurrentStatesOfPlayers() const {
+const vector<unique_ptr<FPSClientState>> &FPS_Game::getCurrentStatesOfPlayers() const {
     return currentStatesOfPlayers;
 }
 
-const vector<FPSClientState *> &FPS_Game::getCumulativeDeltaStatesPlayers() const {
+const vector<unique_ptr<FPSClientState>> &FPS_Game::getCumulativeDeltaStatesPlayers() const {
     return cumulativeDeltaStatesPlayers;
 }
 
