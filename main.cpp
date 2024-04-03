@@ -71,8 +71,8 @@ int main() {
 
     //create the ENetHost here for Transmitter, and ENetAddress corresponding to the host here
 
-    auto gateway = new Gateway("192.168.1.12", 5450, receiveBuffer);
-    auto transmitter = new Transmitter("192.168.1.12", 5451, outputBuffer);
+    auto gateway = new Gateway("172.17.132.128", 5450, receiveBuffer);
+    auto transmitter = new Transmitter("172.17.132.128", 5451, outputBuffer);
 
     GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex, true);
 

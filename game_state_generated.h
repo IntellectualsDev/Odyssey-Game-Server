@@ -42,6 +42,9 @@ struct InputBuilder;
 struct GlobalState;
 struct GlobalStateBuilder;
 
+struct DifferentialState;
+struct DifferentialStateBuilder;
+
 struct OD_Packet;
 struct OD_PacketBuilder;
 
@@ -112,31 +115,34 @@ enum PacketPayload : uint8_t {
   PacketPayload_NONE = 0,
   PacketPayload_Input = 1,
   PacketPayload_GlobalState = 2,
+  PacketPayload_DifferentialState = 3,
   PacketPayload_MIN = PacketPayload_NONE,
-  PacketPayload_MAX = PacketPayload_GlobalState
+  PacketPayload_MAX = PacketPayload_DifferentialState
 };
 
-inline const PacketPayload (&EnumValuesPacketPayload())[3] {
+inline const PacketPayload (&EnumValuesPacketPayload())[4] {
   static const PacketPayload values[] = {
     PacketPayload_NONE,
     PacketPayload_Input,
-    PacketPayload_GlobalState
+    PacketPayload_GlobalState,
+    PacketPayload_DifferentialState
   };
   return values;
 }
 
 inline const char * const *EnumNamesPacketPayload() {
-  static const char * const names[4] = {
+  static const char * const names[5] = {
     "NONE",
     "Input",
     "GlobalState",
+    "DifferentialState",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNamePacketPayload(PacketPayload e) {
-  if (::flatbuffers::IsOutRange(e, PacketPayload_NONE, PacketPayload_GlobalState)) return "";
+  if (::flatbuffers::IsOutRange(e, PacketPayload_NONE, PacketPayload_DifferentialState)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesPacketPayload()[index];
 }
@@ -151,6 +157,10 @@ template<> struct PacketPayloadTraits<Input> {
 
 template<> struct PacketPayloadTraits<GlobalState> {
   static const PacketPayload enum_value = PacketPayload_GlobalState;
+};
+
+template<> struct PacketPayloadTraits<DifferentialState> {
+  static const PacketPayload enum_value = PacketPayload_DifferentialState;
 };
 
 bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type);
@@ -467,9 +477,9 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_ENTITY_ID = 4,
     VT_ENTITY_LABEL = 6,
     VT_POSITION = 8,
-    VT_FACING = 10,
-    VT_VELOCITY = 12,
-    VT_ALIVE = 14
+    VT_VELOCITY = 10,
+    VT_ALIVE = 12,
+    VT_BORN = 14
   };
   uint32_t entity_id() const {
     return GetField<uint32_t>(VT_ENTITY_ID, 0);
@@ -480,14 +490,14 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const OD_Vector3 *position() const {
     return GetStruct<const OD_Vector3 *>(VT_POSITION);
   }
-  const OD_Vector3 *facing() const {
-    return GetStruct<const OD_Vector3 *>(VT_FACING);
-  }
   const OD_Vector3 *velocity() const {
     return GetStruct<const OD_Vector3 *>(VT_VELOCITY);
   }
   bool alive() const {
     return GetField<uint8_t>(VT_ALIVE, 0) != 0;
+  }
+  bool born() const {
+    return GetField<uint8_t>(VT_BORN, 0) != 0;
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -495,9 +505,9 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyOffset(verifier, VT_ENTITY_LABEL) &&
            verifier.VerifyString(entity_label()) &&
            VerifyField<OD_Vector3>(verifier, VT_POSITION, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_FACING, 4) &&
            VerifyField<OD_Vector3>(verifier, VT_VELOCITY, 4) &&
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
+           VerifyField<uint8_t>(verifier, VT_BORN, 1) &&
            verifier.EndTable();
   }
 };
@@ -515,14 +525,14 @@ struct EntityBuilder {
   void add_position(const OD_Vector3 *position) {
     fbb_.AddStruct(Entity::VT_POSITION, position);
   }
-  void add_facing(const OD_Vector3 *facing) {
-    fbb_.AddStruct(Entity::VT_FACING, facing);
-  }
   void add_velocity(const OD_Vector3 *velocity) {
     fbb_.AddStruct(Entity::VT_VELOCITY, velocity);
   }
   void add_alive(bool alive) {
     fbb_.AddElement<uint8_t>(Entity::VT_ALIVE, static_cast<uint8_t>(alive), 0);
+  }
+  void add_born(bool born) {
+    fbb_.AddElement<uint8_t>(Entity::VT_BORN, static_cast<uint8_t>(born), 0);
   }
   explicit EntityBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -540,15 +550,15 @@ inline ::flatbuffers::Offset<Entity> CreateEntity(
     uint32_t entity_id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> entity_label = 0,
     const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *facing = nullptr,
     const OD_Vector3 *velocity = nullptr,
-    bool alive = false) {
+    bool alive = false,
+    bool born = false) {
   EntityBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
-  builder_.add_facing(facing);
   builder_.add_position(position);
   builder_.add_entity_label(entity_label);
   builder_.add_entity_id(entity_id);
+  builder_.add_born(born);
   builder_.add_alive(alive);
   return builder_.Finish();
 }
@@ -558,18 +568,18 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
     uint32_t entity_id = 0,
     const char *entity_label = nullptr,
     const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *facing = nullptr,
     const OD_Vector3 *velocity = nullptr,
-    bool alive = false) {
+    bool alive = false,
+    bool born = false) {
   auto entity_label__ = entity_label ? _fbb.CreateString(entity_label) : 0;
   return CreateEntity(
       _fbb,
       entity_id,
       entity_label__,
       position,
-      facing,
       velocity,
-      alive);
+      alive,
+      born);
 }
 
 struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -584,9 +594,8 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_GROUNDED = 16,
     VT_COOLDOWN = 18,
     VT_POSITION = 20,
-    VT_FACING = 22,
-    VT_VELOCITY = 24,
-    VT_ENTITIES = 26
+    VT_VELOCITY = 22,
+    VT_ENTITIES = 24
   };
   const SourcePoint *source_point() const {
     return GetPointer<const SourcePoint *>(VT_SOURCE_POINT);
@@ -615,9 +624,6 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const OD_Vector3 *position() const {
     return GetStruct<const OD_Vector3 *>(VT_POSITION);
   }
-  const OD_Vector3 *facing() const {
-    return GetStruct<const OD_Vector3 *>(VT_FACING);
-  }
   const OD_Vector3 *velocity() const {
     return GetStruct<const OD_Vector3 *>(VT_VELOCITY);
   }
@@ -637,7 +643,6 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_GROUNDED, 1) &&
            VerifyField<float>(verifier, VT_COOLDOWN, 4) &&
            VerifyField<OD_Vector3>(verifier, VT_POSITION, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_FACING, 4) &&
            VerifyField<OD_Vector3>(verifier, VT_VELOCITY, 4) &&
            VerifyOffset(verifier, VT_ENTITIES) &&
            verifier.VerifyVector(entities()) &&
@@ -677,9 +682,6 @@ struct ClientBuilder {
   void add_position(const OD_Vector3 *position) {
     fbb_.AddStruct(Client::VT_POSITION, position);
   }
-  void add_facing(const OD_Vector3 *facing) {
-    fbb_.AddStruct(Client::VT_FACING, facing);
-  }
   void add_velocity(const OD_Vector3 *velocity) {
     fbb_.AddStruct(Client::VT_VELOCITY, velocity);
   }
@@ -708,13 +710,11 @@ inline ::flatbuffers::Offset<Client> CreateClient(
     bool grounded = false,
     float cooldown = 0.0f,
     const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *facing = nullptr,
     const OD_Vector3 *velocity = nullptr,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Entity>>> entities = 0) {
   ClientBuilder builder_(_fbb);
   builder_.add_entities(entities);
   builder_.add_velocity(velocity);
-  builder_.add_facing(facing);
   builder_.add_position(position);
   builder_.add_cooldown(cooldown);
   builder_.add_camera(camera);
@@ -738,7 +738,6 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
     bool grounded = false,
     float cooldown = 0.0f,
     const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *facing = nullptr,
     const OD_Vector3 *velocity = nullptr,
     const std::vector<::flatbuffers::Offset<Entity>> *entities = nullptr) {
   auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<Entity>>(*entities) : 0;
@@ -753,7 +752,6 @@ inline ::flatbuffers::Offset<Client> CreateClientDirect(
       grounded,
       cooldown,
       position,
-      facing,
       velocity,
       entities__);
 }
@@ -961,6 +959,58 @@ inline ::flatbuffers::Offset<GlobalState> CreateGlobalStateDirect(
       client_state__);
 }
 
+struct DifferentialState FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DifferentialStateBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_CLIENT_STATE = 4
+  };
+  const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *client_state() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *>(VT_CLIENT_STATE);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_CLIENT_STATE) &&
+           verifier.VerifyVector(client_state()) &&
+           verifier.VerifyVectorOfTables(client_state()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DifferentialStateBuilder {
+  typedef DifferentialState Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_client_state(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state) {
+    fbb_.AddOffset(DifferentialState::VT_CLIENT_STATE, client_state);
+  }
+  explicit DifferentialStateBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<DifferentialState> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<DifferentialState>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<DifferentialState> CreateDifferentialState(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state = 0) {
+  DifferentialStateBuilder builder_(_fbb);
+  builder_.add_client_state(client_state);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<DifferentialState> CreateDifferentialStateDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<Client>> *client_state = nullptr) {
+  auto client_state__ = client_state ? _fbb.CreateVector<::flatbuffers::Offset<Client>>(*client_state) : 0;
+  return CreateDifferentialState(
+      _fbb,
+      client_state__);
+}
+
 struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef OD_PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -1004,6 +1054,9 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const GlobalState *payload_as_GlobalState() const {
     return payload_type() == PacketPayload_GlobalState ? static_cast<const GlobalState *>(payload()) : nullptr;
   }
+  const DifferentialState *payload_as_DifferentialState() const {
+    return payload_type() == PacketPayload_DifferentialState ? static_cast<const DifferentialState *>(payload()) : nullptr;
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_PACKET_TYPE, 1) &&
@@ -1027,6 +1080,10 @@ template<> inline const Input *OD_Packet::payload_as<Input>() const {
 
 template<> inline const GlobalState *OD_Packet::payload_as<GlobalState>() const {
   return payload_as_GlobalState();
+}
+
+template<> inline const DifferentialState *OD_Packet::payload_as<DifferentialState>() const {
+  return payload_as_DifferentialState();
 }
 
 struct OD_PacketBuilder {
@@ -1101,6 +1158,10 @@ inline bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *o
     }
     case PacketPayload_GlobalState: {
       auto ptr = reinterpret_cast<const GlobalState *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case PacketPayload_DifferentialState: {
+      auto ptr = reinterpret_cast<const DifferentialState *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

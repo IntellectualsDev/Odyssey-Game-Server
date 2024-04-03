@@ -234,18 +234,25 @@ void FPS_Game::calculateDeltas() {
 
 
         // calculate the entities' delta values
+        // Edge case: If a new entity is created, size(currentState's entities) > size(previousState's entities)
+        //      Expand the size of Delta State's size to current State's size
+        // Edge case: If an is killed (NOT alive), checkEntityCollisions() sets entities that collide to dead, then next server tick it is deleted. How to handle when updateEntities() deletes entity
+        //      size(previous States) > size(currentStates)
+
+
+
         // If the deltas and current state have mismatched size, resize delta to match and fill with default states
         cout << "i = " << i << ", Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;
 
-        size_t oldSize = cumulativeDeltaStatesPlayers[i]->entities.size();
-        cout << "old Size: " << oldSize << endl;
-        if(oldSize < currentStatesOfPlayers[i]->entities.size()){
-            cumulativeDeltaStatesPlayers[i]->entities.resize(currentStatesOfPlayers[i]->entities.size());
-
-            for(int j = oldSize; j < currentStatesOfPlayers[i]->entities.size(); j++){
-                cumulativeDeltaStatesPlayers[i]->entities[j] = FPSEntityState();
-            }
-        }
+//        size_t oldSize = cumulativeDeltaStatesPlayers[i]->entities.size();
+//        cout << "old Size: " << oldSize << endl;
+//        if(oldSize < currentStatesOfPlayers[i]->entities.size()){
+//            cumulativeDeltaStatesPlayers[i]->entities.resize(currentStatesOfPlayers[i]->entities.size());
+//
+//            for(int j = oldSize; j < currentStatesOfPlayers[i]->entities.size(); j++){
+//                cumulativeDeltaStatesPlayers[i]->entities[j] = FPSEntityState();
+//            }
+//        }
 
         for(int j = 0; j < currentStatesOfPlayers[i]->entities.size(); j++){
 //            cout << "Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;

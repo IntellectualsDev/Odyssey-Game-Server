@@ -33,6 +33,7 @@ struct FPSClientState {
 //    float Jump = 0.8f;
     bool grounded = false;
     bool space;
+    bool sprint = false;
     BoundingBox playerBox{}; //
 //    Vector3 hitBox{}; // don't need to send this
     float coolDown;

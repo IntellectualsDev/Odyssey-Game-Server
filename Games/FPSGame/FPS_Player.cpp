@@ -64,6 +64,9 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
         currentState.velocity = (Vector3){(w)*dt*4  -(s)*dt*4 ,0,(d)*dt*4  -(a)*dt*4 };
     }
 
+
+    currentState.sprint = sprint;
+
     //TODO check for case to set grounded == true
     //TODO implement grounded/jumping movement
     UpdateCameraPro(&previousState.camera,

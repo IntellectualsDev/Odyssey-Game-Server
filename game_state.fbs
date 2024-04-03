@@ -66,15 +66,16 @@ table Entity {
     entity_id: uint;
     entity_label: string;
     position: OD_Vector3;
-    facing: OD_Vector3;
+    // facing: OD_Vector3; // velocity already encodes this, not needed
     velocity: OD_Vector3;
     alive: bool;
+    born: bool;
 }
 
 // Define the state of a Client
 table Client {
     source_point: SourcePoint;
-    tick: Tick;
+    tick: Tick; // client never sends me their tick
     client_uid: uint;
     alive: bool;
     sprint: bool;
@@ -83,9 +84,8 @@ table Client {
     grounded: bool;
     cooldown: float;
     position: OD_Vector3;
-    facing: OD_Vector3;
+    // facing: OD_Vector3; // the facing is stored within the camera object's target ??
     velocity: OD_Vector3;
-
     entities:[Entity];
 }
 
@@ -109,9 +109,14 @@ table GlobalState {
     client_state:[Client];
 }
 
+table DifferentialState {
+    client_state:[Client];
+}
+
 union PacketPayload {
     Input,
     GlobalState,
+    DifferentialState
 }
 
 table OD_Packet {

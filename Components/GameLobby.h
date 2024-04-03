@@ -35,7 +35,16 @@ private:
     void update(unique_ptr<BufferHandler> packet);
 //    void
     void render();
+    void sendDifferentials();
     void sendSnapShot();
+
+    void buildFlatBuffer(const vector<unique_ptr<FPSClientState>> states,
+                         flatbuffers::Offset<flatbuffers::String> sourcePoint,
+                         flatbuffers::Offset<flatbuffers::String> destPoint,
+                         bool reliable,
+                         PacketType packeType,
+                         PacketPayload payload
+                         );
 
 //    LobbyManagementService* LobbyServices;
     PartitionedPacketBuffer* receiveBuffer;
