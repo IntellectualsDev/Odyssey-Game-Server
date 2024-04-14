@@ -28,6 +28,7 @@ public:
     void start();
     void stop();
     size_t getPartitionIndex() const;
+    static constexpr const float tickRate = 60.0f;
 
 private:
     void run();
@@ -38,13 +39,16 @@ private:
     void sendDifferentials();
     void sendSnapShot();
 
-    void buildFlatBuffer(const vector<unique_ptr<FPSClientState>> states,
+    void buildStateFlatBuffer(vector<unique_ptr<FPSClientState>>& states,
                          flatbuffers::Offset<flatbuffers::String> sourcePoint,
                          flatbuffers::Offset<flatbuffers::String> destPoint,
                          bool reliable,
                          PacketType packeType,
-                         PacketPayload payload
+                         PacketPayload payload,
+                         bool delta
                          );
+
+    void buildGenericFlatBuffer();
 
 //    LobbyManagementService* LobbyServices;
     PartitionedPacketBuffer* receiveBuffer;
@@ -57,7 +61,7 @@ private:
     mutex& consoleMutex;
 
     uint32_t tickNumber = 0;
-    const float tickRate = 60.0f;
+//    const float tickRate = 60.0f;
     std::chrono::steady_clock::time_point lastTick;
 
     FPS_Game game;

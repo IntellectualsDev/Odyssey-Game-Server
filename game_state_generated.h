@@ -14,10 +14,13 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
              "Non-compatible flatbuffers version included");
 
 struct OD_Vector3;
+struct OD_Vector3Builder;
 
 struct OD_Vector2;
+struct OD_Vector2Builder;
 
 struct OD_BoundingBox;
+struct OD_BoundingBoxBuilder;
 
 struct SourcePoint;
 struct SourcePointBuilder;
@@ -26,6 +29,7 @@ struct DestPoint;
 struct DestPointBuilder;
 
 struct Tick;
+struct TickBuilder;
 
 struct OD_Camera3D;
 struct OD_Camera3DBuilder;
@@ -166,103 +170,170 @@ template<> struct PacketPayloadTraits<DifferentialState> {
 bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type);
 bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
 
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) OD_Vector3 FLATBUFFERS_FINAL_CLASS {
- private:
-  float x_;
-  float y_;
-  float z_;
-
- public:
-  OD_Vector3()
-      : x_(0),
-        y_(0),
-        z_(0) {
-  }
-  OD_Vector3(float _x, float _y, float _z)
-      : x_(::flatbuffers::EndianScalar(_x)),
-        y_(::flatbuffers::EndianScalar(_y)),
-        z_(::flatbuffers::EndianScalar(_z)) {
-  }
+struct OD_Vector3 FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef OD_Vector3Builder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_X = 4,
+    VT_Y = 6,
+    VT_Z = 8
+  };
   float x() const {
-    return ::flatbuffers::EndianScalar(x_);
+    return GetField<float>(VT_X, 0.0f);
   }
   float y() const {
-    return ::flatbuffers::EndianScalar(y_);
+    return GetField<float>(VT_Y, 0.0f);
   }
   float z() const {
-    return ::flatbuffers::EndianScalar(z_);
+    return GetField<float>(VT_Z, 0.0f);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<float>(verifier, VT_X, 4) &&
+           VerifyField<float>(verifier, VT_Y, 4) &&
+           VerifyField<float>(verifier, VT_Z, 4) &&
+           verifier.EndTable();
   }
 };
-FLATBUFFERS_STRUCT_END(OD_Vector3, 12);
 
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) OD_Vector2 FLATBUFFERS_FINAL_CLASS {
- private:
-  float x_;
-  float y_;
+struct OD_Vector3Builder {
+  typedef OD_Vector3 Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_x(float x) {
+    fbb_.AddElement<float>(OD_Vector3::VT_X, x, 0.0f);
+  }
+  void add_y(float y) {
+    fbb_.AddElement<float>(OD_Vector3::VT_Y, y, 0.0f);
+  }
+  void add_z(float z) {
+    fbb_.AddElement<float>(OD_Vector3::VT_Z, z, 0.0f);
+  }
+  explicit OD_Vector3Builder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<OD_Vector3> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<OD_Vector3>(end);
+    return o;
+  }
+};
 
- public:
-  OD_Vector2()
-      : x_(0),
-        y_(0) {
-  }
-  OD_Vector2(float _x, float _y)
-      : x_(::flatbuffers::EndianScalar(_x)),
-        y_(::flatbuffers::EndianScalar(_y)) {
-  }
+inline ::flatbuffers::Offset<OD_Vector3> CreateOD_Vector3(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    float x = 0.0f,
+    float y = 0.0f,
+    float z = 0.0f) {
+  OD_Vector3Builder builder_(_fbb);
+  builder_.add_z(z);
+  builder_.add_y(y);
+  builder_.add_x(x);
+  return builder_.Finish();
+}
+
+struct OD_Vector2 FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef OD_Vector2Builder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_X = 4,
+    VT_Y = 6
+  };
   float x() const {
-    return ::flatbuffers::EndianScalar(x_);
+    return GetField<float>(VT_X, 0.0f);
   }
   float y() const {
-    return ::flatbuffers::EndianScalar(y_);
+    return GetField<float>(VT_Y, 0.0f);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<float>(verifier, VT_X, 4) &&
+           VerifyField<float>(verifier, VT_Y, 4) &&
+           verifier.EndTable();
   }
 };
-FLATBUFFERS_STRUCT_END(OD_Vector2, 8);
 
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) OD_BoundingBox FLATBUFFERS_FINAL_CLASS {
- private:
-  OD_Vector3 min_;
-  OD_Vector3 max_;
-
- public:
-  OD_BoundingBox()
-      : min_(),
-        max_() {
+struct OD_Vector2Builder {
+  typedef OD_Vector2 Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_x(float x) {
+    fbb_.AddElement<float>(OD_Vector2::VT_X, x, 0.0f);
   }
-  OD_BoundingBox(const OD_Vector3 &_min, const OD_Vector3 &_max)
-      : min_(_min),
-        max_(_max) {
+  void add_y(float y) {
+    fbb_.AddElement<float>(OD_Vector2::VT_Y, y, 0.0f);
   }
-  const OD_Vector3 &min() const {
-    return min_;
+  explicit OD_Vector2Builder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
   }
-  const OD_Vector3 &max() const {
-    return max_;
+  ::flatbuffers::Offset<OD_Vector2> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<OD_Vector2>(end);
+    return o;
   }
 };
-FLATBUFFERS_STRUCT_END(OD_BoundingBox, 24);
 
-FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Tick FLATBUFFERS_FINAL_CLASS {
- private:
-  uint32_t tick_number_;
-  float dt_;
+inline ::flatbuffers::Offset<OD_Vector2> CreateOD_Vector2(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    float x = 0.0f,
+    float y = 0.0f) {
+  OD_Vector2Builder builder_(_fbb);
+  builder_.add_y(y);
+  builder_.add_x(x);
+  return builder_.Finish();
+}
 
- public:
-  Tick()
-      : tick_number_(0),
-        dt_(0) {
+struct OD_BoundingBox FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef OD_BoundingBoxBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_MIN = 4,
+    VT_MAX = 6
+  };
+  const OD_Vector3 *min() const {
+    return GetPointer<const OD_Vector3 *>(VT_MIN);
   }
-  Tick(uint32_t _tick_number, float _dt)
-      : tick_number_(::flatbuffers::EndianScalar(_tick_number)),
-        dt_(::flatbuffers::EndianScalar(_dt)) {
+  const OD_Vector3 *max() const {
+    return GetPointer<const OD_Vector3 *>(VT_MAX);
   }
-  uint32_t tick_number() const {
-    return ::flatbuffers::EndianScalar(tick_number_);
-  }
-  float dt() const {
-    return ::flatbuffers::EndianScalar(dt_);
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_MIN) &&
+           verifier.VerifyTable(min()) &&
+           VerifyOffset(verifier, VT_MAX) &&
+           verifier.VerifyTable(max()) &&
+           verifier.EndTable();
   }
 };
-FLATBUFFERS_STRUCT_END(Tick, 8);
+
+struct OD_BoundingBoxBuilder {
+  typedef OD_BoundingBox Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_min(::flatbuffers::Offset<OD_Vector3> min) {
+    fbb_.AddOffset(OD_BoundingBox::VT_MIN, min);
+  }
+  void add_max(::flatbuffers::Offset<OD_Vector3> max) {
+    fbb_.AddOffset(OD_BoundingBox::VT_MAX, max);
+  }
+  explicit OD_BoundingBoxBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<OD_BoundingBox> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<OD_BoundingBox>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<OD_BoundingBox> CreateOD_BoundingBox(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<OD_Vector3> min = 0,
+    ::flatbuffers::Offset<OD_Vector3> max = 0) {
+  OD_BoundingBoxBuilder builder_(_fbb);
+  builder_.add_max(max);
+  builder_.add_min(min);
+  return builder_.Finish();
+}
 
 struct SourcePoint FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef SourcePointBuilder Builder;
@@ -390,6 +461,57 @@ inline ::flatbuffers::Offset<DestPoint> CreateDestPointDirect(
       port);
 }
 
+struct Tick FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef TickBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TICK_NUMBER = 4,
+    VT_DT = 6
+  };
+  uint32_t tick_number() const {
+    return GetField<uint32_t>(VT_TICK_NUMBER, 0);
+  }
+  float dt() const {
+    return GetField<float>(VT_DT, 0.0f);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_TICK_NUMBER, 4) &&
+           VerifyField<float>(verifier, VT_DT, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct TickBuilder {
+  typedef Tick Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_tick_number(uint32_t tick_number) {
+    fbb_.AddElement<uint32_t>(Tick::VT_TICK_NUMBER, tick_number, 0);
+  }
+  void add_dt(float dt) {
+    fbb_.AddElement<float>(Tick::VT_DT, dt, 0.0f);
+  }
+  explicit TickBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Tick> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Tick>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Tick> CreateTick(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t tick_number = 0,
+    float dt = 0.0f) {
+  TickBuilder builder_(_fbb);
+  builder_.add_dt(dt);
+  builder_.add_tick_number(tick_number);
+  return builder_.Finish();
+}
+
 struct OD_Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef OD_Camera3DBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -400,13 +522,13 @@ struct OD_Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_PROJECTION = 12
   };
   const OD_Vector3 *position() const {
-    return GetStruct<const OD_Vector3 *>(VT_POSITION);
+    return GetPointer<const OD_Vector3 *>(VT_POSITION);
   }
   const OD_Vector3 *target() const {
-    return GetStruct<const OD_Vector3 *>(VT_TARGET);
+    return GetPointer<const OD_Vector3 *>(VT_TARGET);
   }
   const OD_Vector3 *up() const {
-    return GetStruct<const OD_Vector3 *>(VT_UP);
+    return GetPointer<const OD_Vector3 *>(VT_UP);
   }
   float fovy() const {
     return GetField<float>(VT_FOVY, 0.0f);
@@ -416,9 +538,12 @@ struct OD_Camera3D FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<OD_Vector3>(verifier, VT_POSITION, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_TARGET, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_UP, 4) &&
+           VerifyOffset(verifier, VT_POSITION) &&
+           verifier.VerifyTable(position()) &&
+           VerifyOffset(verifier, VT_TARGET) &&
+           verifier.VerifyTable(target()) &&
+           VerifyOffset(verifier, VT_UP) &&
+           verifier.VerifyTable(up()) &&
            VerifyField<float>(verifier, VT_FOVY, 4) &&
            VerifyField<int32_t>(verifier, VT_PROJECTION, 4) &&
            verifier.EndTable();
@@ -429,14 +554,14 @@ struct OD_Camera3DBuilder {
   typedef OD_Camera3D Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_position(const OD_Vector3 *position) {
-    fbb_.AddStruct(OD_Camera3D::VT_POSITION, position);
+  void add_position(::flatbuffers::Offset<OD_Vector3> position) {
+    fbb_.AddOffset(OD_Camera3D::VT_POSITION, position);
   }
-  void add_target(const OD_Vector3 *target) {
-    fbb_.AddStruct(OD_Camera3D::VT_TARGET, target);
+  void add_target(::flatbuffers::Offset<OD_Vector3> target) {
+    fbb_.AddOffset(OD_Camera3D::VT_TARGET, target);
   }
-  void add_up(const OD_Vector3 *up) {
-    fbb_.AddStruct(OD_Camera3D::VT_UP, up);
+  void add_up(::flatbuffers::Offset<OD_Vector3> up) {
+    fbb_.AddOffset(OD_Camera3D::VT_UP, up);
   }
   void add_fovy(float fovy) {
     fbb_.AddElement<float>(OD_Camera3D::VT_FOVY, fovy, 0.0f);
@@ -457,9 +582,9 @@ struct OD_Camera3DBuilder {
 
 inline ::flatbuffers::Offset<OD_Camera3D> CreateOD_Camera3D(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *target = nullptr,
-    const OD_Vector3 *up = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> position = 0,
+    ::flatbuffers::Offset<OD_Vector3> target = 0,
+    ::flatbuffers::Offset<OD_Vector3> up = 0,
     float fovy = 0.0f,
     int32_t projection = 0) {
   OD_Camera3DBuilder builder_(_fbb);
@@ -479,7 +604,7 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_POSITION = 8,
     VT_VELOCITY = 10,
     VT_ALIVE = 12,
-    VT_BORN = 14
+    VT_CLAIMED = 14
   };
   uint32_t entity_id() const {
     return GetField<uint32_t>(VT_ENTITY_ID, 0);
@@ -488,26 +613,28 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetPointer<const ::flatbuffers::String *>(VT_ENTITY_LABEL);
   }
   const OD_Vector3 *position() const {
-    return GetStruct<const OD_Vector3 *>(VT_POSITION);
+    return GetPointer<const OD_Vector3 *>(VT_POSITION);
   }
   const OD_Vector3 *velocity() const {
-    return GetStruct<const OD_Vector3 *>(VT_VELOCITY);
+    return GetPointer<const OD_Vector3 *>(VT_VELOCITY);
   }
   bool alive() const {
     return GetField<uint8_t>(VT_ALIVE, 0) != 0;
   }
-  bool born() const {
-    return GetField<uint8_t>(VT_BORN, 0) != 0;
+  bool claimed() const {
+    return GetField<uint8_t>(VT_CLAIMED, 0) != 0;
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_ENTITY_ID, 4) &&
            VerifyOffset(verifier, VT_ENTITY_LABEL) &&
            verifier.VerifyString(entity_label()) &&
-           VerifyField<OD_Vector3>(verifier, VT_POSITION, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_VELOCITY, 4) &&
+           VerifyOffset(verifier, VT_POSITION) &&
+           verifier.VerifyTable(position()) &&
+           VerifyOffset(verifier, VT_VELOCITY) &&
+           verifier.VerifyTable(velocity()) &&
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
-           VerifyField<uint8_t>(verifier, VT_BORN, 1) &&
+           VerifyField<uint8_t>(verifier, VT_CLAIMED, 1) &&
            verifier.EndTable();
   }
 };
@@ -522,17 +649,17 @@ struct EntityBuilder {
   void add_entity_label(::flatbuffers::Offset<::flatbuffers::String> entity_label) {
     fbb_.AddOffset(Entity::VT_ENTITY_LABEL, entity_label);
   }
-  void add_position(const OD_Vector3 *position) {
-    fbb_.AddStruct(Entity::VT_POSITION, position);
+  void add_position(::flatbuffers::Offset<OD_Vector3> position) {
+    fbb_.AddOffset(Entity::VT_POSITION, position);
   }
-  void add_velocity(const OD_Vector3 *velocity) {
-    fbb_.AddStruct(Entity::VT_VELOCITY, velocity);
+  void add_velocity(::flatbuffers::Offset<OD_Vector3> velocity) {
+    fbb_.AddOffset(Entity::VT_VELOCITY, velocity);
   }
   void add_alive(bool alive) {
     fbb_.AddElement<uint8_t>(Entity::VT_ALIVE, static_cast<uint8_t>(alive), 0);
   }
-  void add_born(bool born) {
-    fbb_.AddElement<uint8_t>(Entity::VT_BORN, static_cast<uint8_t>(born), 0);
+  void add_claimed(bool claimed) {
+    fbb_.AddElement<uint8_t>(Entity::VT_CLAIMED, static_cast<uint8_t>(claimed), 0);
   }
   explicit EntityBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -549,16 +676,16 @@ inline ::flatbuffers::Offset<Entity> CreateEntity(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t entity_id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> entity_label = 0,
-    const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *velocity = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> position = 0,
+    ::flatbuffers::Offset<OD_Vector3> velocity = 0,
     bool alive = false,
-    bool born = false) {
+    bool claimed = false) {
   EntityBuilder builder_(_fbb);
   builder_.add_velocity(velocity);
   builder_.add_position(position);
   builder_.add_entity_label(entity_label);
   builder_.add_entity_id(entity_id);
-  builder_.add_born(born);
+  builder_.add_claimed(claimed);
   builder_.add_alive(alive);
   return builder_.Finish();
 }
@@ -567,10 +694,10 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t entity_id = 0,
     const char *entity_label = nullptr,
-    const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *velocity = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> position = 0,
+    ::flatbuffers::Offset<OD_Vector3> velocity = 0,
     bool alive = false,
-    bool born = false) {
+    bool claimed = false) {
   auto entity_label__ = entity_label ? _fbb.CreateString(entity_label) : 0;
   return CreateEntity(
       _fbb,
@@ -579,7 +706,7 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
       position,
       velocity,
       alive,
-      born);
+      claimed);
 }
 
 struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -601,7 +728,7 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetPointer<const SourcePoint *>(VT_SOURCE_POINT);
   }
   const Tick *tick() const {
-    return GetStruct<const Tick *>(VT_TICK);
+    return GetPointer<const Tick *>(VT_TICK);
   }
   uint32_t client_uid() const {
     return GetField<uint32_t>(VT_CLIENT_UID, 0);
@@ -622,10 +749,10 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetField<float>(VT_COOLDOWN, 0.0f);
   }
   const OD_Vector3 *position() const {
-    return GetStruct<const OD_Vector3 *>(VT_POSITION);
+    return GetPointer<const OD_Vector3 *>(VT_POSITION);
   }
   const OD_Vector3 *velocity() const {
-    return GetStruct<const OD_Vector3 *>(VT_VELOCITY);
+    return GetPointer<const OD_Vector3 *>(VT_VELOCITY);
   }
   const ::flatbuffers::Vector<::flatbuffers::Offset<Entity>> *entities() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Entity>> *>(VT_ENTITIES);
@@ -634,7 +761,8 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_SOURCE_POINT) &&
            verifier.VerifyTable(source_point()) &&
-           VerifyField<Tick>(verifier, VT_TICK, 4) &&
+           VerifyOffset(verifier, VT_TICK) &&
+           verifier.VerifyTable(tick()) &&
            VerifyField<uint32_t>(verifier, VT_CLIENT_UID, 4) &&
            VerifyField<uint8_t>(verifier, VT_ALIVE, 1) &&
            VerifyField<uint8_t>(verifier, VT_SPRINT, 1) &&
@@ -642,8 +770,10 @@ struct Client FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyTable(camera()) &&
            VerifyField<uint8_t>(verifier, VT_GROUNDED, 1) &&
            VerifyField<float>(verifier, VT_COOLDOWN, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_POSITION, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_VELOCITY, 4) &&
+           VerifyOffset(verifier, VT_POSITION) &&
+           verifier.VerifyTable(position()) &&
+           VerifyOffset(verifier, VT_VELOCITY) &&
+           verifier.VerifyTable(velocity()) &&
            VerifyOffset(verifier, VT_ENTITIES) &&
            verifier.VerifyVector(entities()) &&
            verifier.VerifyVectorOfTables(entities()) &&
@@ -658,8 +788,8 @@ struct ClientBuilder {
   void add_source_point(::flatbuffers::Offset<SourcePoint> source_point) {
     fbb_.AddOffset(Client::VT_SOURCE_POINT, source_point);
   }
-  void add_tick(const Tick *tick) {
-    fbb_.AddStruct(Client::VT_TICK, tick);
+  void add_tick(::flatbuffers::Offset<Tick> tick) {
+    fbb_.AddOffset(Client::VT_TICK, tick);
   }
   void add_client_uid(uint32_t client_uid) {
     fbb_.AddElement<uint32_t>(Client::VT_CLIENT_UID, client_uid, 0);
@@ -679,11 +809,11 @@ struct ClientBuilder {
   void add_cooldown(float cooldown) {
     fbb_.AddElement<float>(Client::VT_COOLDOWN, cooldown, 0.0f);
   }
-  void add_position(const OD_Vector3 *position) {
-    fbb_.AddStruct(Client::VT_POSITION, position);
+  void add_position(::flatbuffers::Offset<OD_Vector3> position) {
+    fbb_.AddOffset(Client::VT_POSITION, position);
   }
-  void add_velocity(const OD_Vector3 *velocity) {
-    fbb_.AddStruct(Client::VT_VELOCITY, velocity);
+  void add_velocity(::flatbuffers::Offset<OD_Vector3> velocity) {
+    fbb_.AddOffset(Client::VT_VELOCITY, velocity);
   }
   void add_entities(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Entity>>> entities) {
     fbb_.AddOffset(Client::VT_ENTITIES, entities);
@@ -702,15 +832,15 @@ struct ClientBuilder {
 inline ::flatbuffers::Offset<Client> CreateClient(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<SourcePoint> source_point = 0,
-    const Tick *tick = nullptr,
+    ::flatbuffers::Offset<Tick> tick = 0,
     uint32_t client_uid = 0,
     bool alive = false,
     bool sprint = false,
     ::flatbuffers::Offset<OD_Camera3D> camera = 0,
     bool grounded = false,
     float cooldown = 0.0f,
-    const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *velocity = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> position = 0,
+    ::flatbuffers::Offset<OD_Vector3> velocity = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Entity>>> entities = 0) {
   ClientBuilder builder_(_fbb);
   builder_.add_entities(entities);
@@ -730,15 +860,15 @@ inline ::flatbuffers::Offset<Client> CreateClient(
 inline ::flatbuffers::Offset<Client> CreateClientDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<SourcePoint> source_point = 0,
-    const Tick *tick = nullptr,
+    ::flatbuffers::Offset<Tick> tick = 0,
     uint32_t client_uid = 0,
     bool alive = false,
     bool sprint = false,
     ::flatbuffers::Offset<OD_Camera3D> camera = 0,
     bool grounded = false,
     float cooldown = 0.0f,
-    const OD_Vector3 *position = nullptr,
-    const OD_Vector3 *velocity = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> position = 0,
+    ::flatbuffers::Offset<OD_Vector3> velocity = 0,
     const std::vector<::flatbuffers::Offset<Entity>> *entities = nullptr) {
   auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<Entity>>(*entities) : 0;
   return CreateClient(
@@ -788,7 +918,7 @@ struct Input FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetField<uint8_t>(VT_D, 0) != 0;
   }
   const OD_Vector2 *mouse_delta() const {
-    return GetStruct<const OD_Vector2 *>(VT_MOUSE_DELTA);
+    return GetPointer<const OD_Vector2 *>(VT_MOUSE_DELTA);
   }
   bool shoot() const {
     return GetField<uint8_t>(VT_SHOOT, 0) != 0;
@@ -800,7 +930,7 @@ struct Input FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetField<float>(VT_DT, 0.0f);
   }
   const OD_Vector3 *previous_position() const {
-    return GetStruct<const OD_Vector3 *>(VT_PREVIOUS_POSITION);
+    return GetPointer<const OD_Vector3 *>(VT_PREVIOUS_POSITION);
   }
   bool sprint() const {
     return GetField<uint8_t>(VT_SPRINT, 0) != 0;
@@ -815,11 +945,13 @@ struct Input FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_A, 1) &&
            VerifyField<uint8_t>(verifier, VT_S, 1) &&
            VerifyField<uint8_t>(verifier, VT_D, 1) &&
-           VerifyField<OD_Vector2>(verifier, VT_MOUSE_DELTA, 4) &&
+           VerifyOffset(verifier, VT_MOUSE_DELTA) &&
+           verifier.VerifyTable(mouse_delta()) &&
            VerifyField<uint8_t>(verifier, VT_SHOOT, 1) &&
            VerifyField<uint8_t>(verifier, VT_SPACE, 1) &&
            VerifyField<float>(verifier, VT_DT, 4) &&
-           VerifyField<OD_Vector3>(verifier, VT_PREVIOUS_POSITION, 4) &&
+           VerifyOffset(verifier, VT_PREVIOUS_POSITION) &&
+           verifier.VerifyTable(previous_position()) &&
            VerifyField<uint8_t>(verifier, VT_SPRINT, 1) &&
            VerifyField<uint8_t>(verifier, VT_CROUCH, 1) &&
            verifier.EndTable();
@@ -845,8 +977,8 @@ struct InputBuilder {
   void add_d(bool d) {
     fbb_.AddElement<uint8_t>(Input::VT_D, static_cast<uint8_t>(d), 0);
   }
-  void add_mouse_delta(const OD_Vector2 *mouse_delta) {
-    fbb_.AddStruct(Input::VT_MOUSE_DELTA, mouse_delta);
+  void add_mouse_delta(::flatbuffers::Offset<OD_Vector2> mouse_delta) {
+    fbb_.AddOffset(Input::VT_MOUSE_DELTA, mouse_delta);
   }
   void add_shoot(bool shoot) {
     fbb_.AddElement<uint8_t>(Input::VT_SHOOT, static_cast<uint8_t>(shoot), 0);
@@ -857,8 +989,8 @@ struct InputBuilder {
   void add_dt(float dt) {
     fbb_.AddElement<float>(Input::VT_DT, dt, 0.0f);
   }
-  void add_previous_position(const OD_Vector3 *previous_position) {
-    fbb_.AddStruct(Input::VT_PREVIOUS_POSITION, previous_position);
+  void add_previous_position(::flatbuffers::Offset<OD_Vector3> previous_position) {
+    fbb_.AddOffset(Input::VT_PREVIOUS_POSITION, previous_position);
   }
   void add_sprint(bool sprint) {
     fbb_.AddElement<uint8_t>(Input::VT_SPRINT, static_cast<uint8_t>(sprint), 0);
@@ -884,11 +1016,11 @@ inline ::flatbuffers::Offset<Input> CreateInput(
     bool a = false,
     bool s = false,
     bool d = false,
-    const OD_Vector2 *mouse_delta = nullptr,
+    ::flatbuffers::Offset<OD_Vector2> mouse_delta = 0,
     bool shoot = false,
     bool space = false,
     float dt = 0.0f,
-    const OD_Vector3 *previous_position = nullptr,
+    ::flatbuffers::Offset<OD_Vector3> previous_position = 0,
     bool sprint = false,
     bool crouch = false) {
   InputBuilder builder_(_fbb);
@@ -1039,7 +1171,7 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     return GetField<uint8_t>(VT_RELIABLE, 0) != 0;
   }
   const Tick *tick() const {
-    return GetStruct<const Tick *>(VT_TICK);
+    return GetPointer<const Tick *>(VT_TICK);
   }
   PacketPayload payload_type() const {
     return static_cast<PacketPayload>(GetField<uint8_t>(VT_PAYLOAD_TYPE, 0));
@@ -1066,7 +1198,8 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyTable(source_point()) &&
            VerifyField<uint32_t>(verifier, VT_LOBBY_NUMBER, 4) &&
            VerifyField<uint8_t>(verifier, VT_RELIABLE, 1) &&
-           VerifyField<Tick>(verifier, VT_TICK, 4) &&
+           VerifyOffset(verifier, VT_TICK) &&
+           verifier.VerifyTable(tick()) &&
            VerifyField<uint8_t>(verifier, VT_PAYLOAD_TYPE, 1) &&
            VerifyOffset(verifier, VT_PAYLOAD) &&
            VerifyPacketPayload(verifier, payload(), payload_type()) &&
@@ -1105,8 +1238,8 @@ struct OD_PacketBuilder {
   void add_reliable(bool reliable) {
     fbb_.AddElement<uint8_t>(OD_Packet::VT_RELIABLE, static_cast<uint8_t>(reliable), 0);
   }
-  void add_tick(const Tick *tick) {
-    fbb_.AddStruct(OD_Packet::VT_TICK, tick);
+  void add_tick(::flatbuffers::Offset<Tick> tick) {
+    fbb_.AddOffset(OD_Packet::VT_TICK, tick);
   }
   void add_payload_type(PacketPayload payload_type) {
     fbb_.AddElement<uint8_t>(OD_Packet::VT_PAYLOAD_TYPE, static_cast<uint8_t>(payload_type), 0);
@@ -1132,7 +1265,7 @@ inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
     ::flatbuffers::Offset<SourcePoint> source_point = 0,
     uint32_t lobby_number = 0,
     bool reliable = false,
-    const Tick *tick = nullptr,
+    ::flatbuffers::Offset<Tick> tick = 0,
     PacketPayload payload_type = PacketPayload_NONE,
     ::flatbuffers::Offset<void> payload = 0) {
   OD_PacketBuilder builder_(_fbb);

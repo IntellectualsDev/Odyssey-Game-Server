@@ -71,12 +71,13 @@ void GameLobby::run() {
         if(!currentTickPackets.empty()){
 //            vector<unique_ptr<BufferHandler>> currentTickPackets = std::move(temp.value());
             for(int i = 0; i < currentTickPackets.size(); i++){
-                processPacket(std::move(currentTickPackets[i]));
-//                update(std::move(currentTickPackets[i]));
+//                processPacket(std::move(currentTickPackets[i]));
+                cout << "Before update method in game lobby.cpp" << endl;
+                update(std::move(currentTickPackets[i]));
             }
         }
 
-        sendDifferentials();
+//        sendDifferentials();
 //        sendSnapShot();
 //        render();
 
@@ -133,7 +134,8 @@ void GameLobby::processPacket(unique_ptr<BufferHandler> packet) {
         cout << "Destination Point: (IP: " << packet->getPacketView()->dest_point()->address() << ", Port: " << packet->getPacketView()->dest_point()->port() << ") " << endl;
         cout << "Lobby Number: " << packet->getPacketView()->lobby_number() << endl;
         cout << "Client Tick Number: " << packet->getPacketView()->tick()->tick_number() << endl;
-        cout << "Payload: \n\t: ";
+        cout << "Client Tick Number: " << packet->getPacketView()->tick()->tick_number() << endl;
+//        cout << "Payload: \n\t: ";
         cout << "Payload Type: " << EnumNamePacketPayload(packet->getPacketView()->payload_type()) << endl;
         cout << "\tdt: " << packet->getPacketView()->tick()->dt() << endl;
         cout << "\tW: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
@@ -146,26 +148,27 @@ void GameLobby::processPacket(unique_ptr<BufferHandler> packet) {
 }
 
 void GameLobby::update(unique_ptr<BufferHandler> packet) {
-//    {
-//        std::lock_guard<std::mutex> guard(consoleMutex);
-//        cout << "Packet Label: " << EnumNamePacketType(packet->getPacketView()->packet_type()) << endl;
-//        cout << "Source Point: (IP: " << packet->getPacketView()->source_point()->address() << ", Port: " << packet->getPacketView()->source_point()->port() << ") " << endl;
-//        cout << "Destination Point: (IP: " << packet->getPacketView()->dest_point()->address() << ", Port: " << packet->getPacketView()->dest_point()->port() << ") " << endl;
-//        cout << "Lobby Number: " << packet->getPacketView()->lobby_number() << endl;
-//        cout << "Client Tick Number: " << packet->getPacketView()->tick()->tick_number() << endl;
-//        cout << "Payload: \n\t: ";
-//        cout << "Payload Type: " << EnumNamePacketPayload(packet->getPacketView()->payload_type()) << endl;
-//        cout << "\tdt: " << packet->getPacketView()->tick()->dt() << endl;
-//        cout << "\tW: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
-//        cout << "\tMouseDelta: (" << packet->getPacketView()->payload_as_Input()->mouse_delta()->x() << ", " << packet->getPacketView()->payload_as_Input()->mouse_delta()->y() << ")" << endl;
-//        cout << "\tShoot: " << to_string(packet->getPacketView()->payload_as_Input()->shoot()) << ", Jump: " << to_string(packet->getPacketView()->payload_as_Input()->space()) << ", Sprint: " << to_string(packet->getPacketView()->payload_as_Input()->sprint()) << endl;
-//        cout << "\tPrevious State: (" << packet->getPacketView()->payload_as_Input()->previous_position()->x() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->y() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->z() << ")\n" << endl;
-//    }
+    {
+        std::lock_guard<std::mutex> guard(consoleMutex);
+        cout << "Packet Label: " << EnumNamePacketType(packet->getPacketView()->packet_type()) << endl;
+        cout << "Source Point: (IP: " << packet->getPacketView()->source_point()->address() << ", Port: " << packet->getPacketView()->source_point()->port() << ") " << endl;
+        cout << "Destination Point: (IP: " << packet->getPacketView()->dest_point()->address() << ", Port: " << packet->getPacketView()->dest_point()->port() << ") " << endl;
+        cout << "Lobby Number: " << packet->getPacketView()->lobby_number() << endl;
+        cout << "Client Tick Number: " << packet->getPacketView()->tick()->tick_number() << endl;
+        cout << "Payload: \n\t: ";
+        cout << "Payload Type: " << EnumNamePacketPayload(packet->getPacketView()->payload_type()) << endl;
+        cout << "\tdt: " << packet->getPacketView()->tick()->dt() << endl;
+        cout << "\tW: " << packet->getPacketView()->payload_as_Input()->w() << ", A: " << packet->getPacketView()->payload_as_Input()->a() << " S: " << packet->getPacketView()->payload_as_Input()->s() << " D: " << packet->getPacketView()->payload_as_Input()->d() << endl;
+        cout << "\tMouseDelta: (" << packet->getPacketView()->payload_as_Input()->mouse_delta()->x() << ", " << packet->getPacketView()->payload_as_Input()->mouse_delta()->y() << ")" << endl;
+        cout << "\tShoot: " << to_string(packet->getPacketView()->payload_as_Input()->shoot()) << ", Jump: " << to_string(packet->getPacketView()->payload_as_Input()->space()) << ", Sprint: " << to_string(packet->getPacketView()->payload_as_Input()->sprint()) << endl;
+        cout << "\tPrevious State: (" << packet->getPacketView()->payload_as_Input()->previous_position()->x() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->y() << ", " << packet->getPacketView()->payload_as_Input()->previous_position()->z() << ")\n" << endl;
+    }
 
     // 1. updatePlayer
     // 2. updateEntities
     // 3. checkEntityCollisions()
     // 4. Optional: display Server GUI
+    cout << "Before game's static updatePlayer method call in Game Lobby" << endl;
     game.updatePlayer(0,
                       packet->getPacketView()->payload_as_Input()->w(),
                       packet->getPacketView()->payload_as_Input()->a(),
@@ -176,12 +179,13 @@ void GameLobby::update(unique_ptr<BufferHandler> packet) {
                       packet->getPacketView()->payload_as_Input()->space(),
                       packet->getPacketView()->tick()->dt(),
                       packet->getPacketView()->payload_as_Input()->sprint(),
-                      false);
+                      false,
+                      GameLobby::tickRate);
 
     game.updateEntities();
     game.checkEntityCollisions();
     game.calculateDeltas();
-    game.updatePreviousStates();
+//    game.updatePreviousStates();
 
     // TODO: both of these lead to SIGSEGV faults
 
@@ -238,106 +242,206 @@ void GameLobby::render() {
 }
 
 void GameLobby::sendDifferentials() {
+//
+//    // TODO: Use FlatBuffers to build the packet containing the delta's for each player
+//    flatbuffers::FlatBufferBuilder builder(2048);
+//    const auto& deltas = game.getCumulativeDeltaStatesPlayers();
+//    std::vector<flatbuffers::Offset<Client>> clientOffsets;
+//
+//
+//    for(int i = 0; i < game.getCumulativeDeltaStatesPlayers().size(); i++){
+//       // build the Entities list using the Entity schema
+//       const auto& entities = deltas[i]->entities;
+//       std::vector<flatbuffers::Offset<Entity>> entityOffsets;
+//       for(int j = 0; j < entities.size(); j++){
+//           // Entity id: uint
+//           auto entityLabel = builder.CreateString("<blank Entity label>");
+//           auto entityPosition = CreateOD_Vector3(builder, entities[j].position.x, entities[j].position.y, entities[j].position.z);
+//           // facing is not needed
+//           auto entityVelocity = CreateOD_Vector3(builder, entities[j].velocity.x, entities[j].velocity.y, entities[j].velocity.z);
+//
+//           auto entity = CreateEntity(builder,
+//                                      j,
+//                                      entityLabel,
+//                                      entityPosition,
+//                                      entityVelocity,
+//                                      entities[j].alive
+//                                      );
+//           entityOffsets.push_back(entity);
+//
+//       }
+//       auto entitiesVector = builder.CreateVector(entityOffsets);
+//
+//        // TODO: save client's source IP and port
+//        auto clientSourceIP = builder.CreateString("<Unique Client's IP>");
+//        auto clientSourcePoint = CreateSourcePoint(builder, clientSourceIP, 0);
+//        // TODO: client never sends me their tick number, so modify input schema
+//        auto clientTick = CreateTick(builder, 0, deltas[i]->dt);
+//        // alive: bool
+//        // spring: bool
+//
+//        // build the camera
+//        auto cameraPosition = game.vector3IsZero(Vector3{deltas[i]->camera.position.x,deltas[i]->camera.position.y, deltas[i]->camera.position.z}) ? NULL : CreateOD_Vector3(builder, deltas[i]->camera.position.x,deltas[i]->camera.position.y, deltas[i]->camera.position.z);
+////                CreateOD_Vector3(builder, deltas[i]->camera.position.x,deltas[i]->camera.position.y, deltas[i]->camera.position.z);
+//        auto cameraTarget = CreateOD_Vector3(builder, deltas[i]->camera.target.x, deltas[i]->camera.target.y, deltas[i]->camera.target.z);
+//        auto cameraUp = CreateOD_Vector3(builder, deltas[i]->camera.up.x, deltas[i]->camera.up.y, deltas[i]->camera.up.z);
+//        auto camera = CreateOD_Camera3D(
+//                builder,
+//                cameraPosition,
+//                cameraTarget,
+//                cameraUp,
+//                deltas[i]->camera.fovy,
+//                deltas[i]->camera.projection
+//        );
+//        // grounded: bool
+//        // cooldown: float
+//        auto position = CreateOD_Vector3(builder, deltas[i]->position.x, deltas[i]->position.y, deltas[i]->position.z);
+//        // facing NOT meeded, encoded in the Camera's direction
+//        auto velocity = CreateOD_Vector3(builder, deltas[i]->velocity.x, deltas[i]->velocity.y, deltas[i]->velocity.z);
+//        // alive: bool
+//
+//       auto client = CreateClient(builder,
+//                                  clientSourcePoint,
+//                                  clientTick,
+//                                  i,
+//                                  deltas[i]->alive,
+//                                  deltas[i]->sprint,
+//                                  camera,
+//                                  deltas[i]->grounded,
+//                                  deltas[i]->coolDown,
+//                                  position,
+//                                  velocity,
+//                                  entitiesVector
+//                                  );
+//       clientOffsets.push_back(client);
+//    }
+//    // build the OD_Packet of Payload Global State
+//
+//
+//    //TODO: do not statically assign this
+//    auto destAddr = builder.CreateString("<Client IP>");
+//    auto sourceAddr = builder.CreateString("<Game Server IP>");
+//    auto destSourcePoint = CreateDestPoint(builder, destAddr, 0);
+//    auto sourceSourcePoint = CreateSourcePoint(builder, sourceAddr, 5450);
+//    auto serverTick = CreateTick(builder, this->tickNumber, 1.0/tickRate);
+//    auto type = PacketPayload_DifferentialState;
+//
+//
+////    OD_PacketBuilder packetBuilder(builder);
+//    auto diffPacket = CreateOD_Packet(builder,
+//                    PacketType_DifferentialState,
+//                    destSourcePoint,
+//                    sourceSourcePoint,
+//                    this->partitionIndex,
+//                    false,
+//                    serverTick,
+//                    PacketPayload_DifferentialState
+//                    );
+//
+//    builder.Finish(diffPacket);
+//    uint8_t* buffer = builder.GetBufferPointer();
+//    size_t bufferSize = builder.GetSize();
+//
+//    cout << "Created a Differential Packet Buffer of size " << bufferSize << " bytes." << endl;
+//    return;
+}
 
-    // TODO: Use FlatBuffers to build the packet containing the delta's for each player
+void GameLobby::buildStateFlatBuffer(vector<unique_ptr<FPSClientState>>& states,
+                                flatbuffers::Offset<flatbuffers::String> sourcePoint,
+                                flatbuffers::Offset<flatbuffers::String> destPoint, bool reliable, PacketType packeType,
+                                PacketPayload payload, bool delta) {
     flatbuffers::FlatBufferBuilder builder(2048);
-    const auto& deltas = game.getCumulativeDeltaStatesPlayers();
     std::vector<flatbuffers::Offset<Client>> clientOffsets;
 
-    for(int i = 0; i < game.getCumulativeDeltaStatesPlayers().size(); i++){
-       // build the Entities list using the Entity schema
-       const auto& entities = deltas[i]->entities;
-       std::vector<flatbuffers::Offset<Entity>> entityOffsets;
-       for(int j = 0; j < entities.size(); j++){
-           // Entity id: uint
-           auto entityLabel = builder.CreateString("<blank Entity label>");
-           auto entityPosition = OD_Vector3(entities[j].position.x, entities[j].position.y, entities[j].position.z);
-           // facing is not needed
-           auto entityVelocity = OD_Vector3(entities[j].velocity.x, entities[j].velocity.y, entities[j].velocity.z);
+    for(int i = 0; i < states.size(); i++){
+        const auto& entities = states[i]->entities;
+        std::vector<flatbuffers::Offset<Entity>> entityOffsets;
+        for(int j = 0; j < entities.size(); j++){
+            // Entity id: uint
+            auto entityLabel = builder.CreateString("<blank Entity label>");
 
-           auto entity = CreateEntity(builder,
-                                      j,
-                                      entityLabel,
-                                      &entityPosition,
-                                      &entityVelocity,
-                                      entities[j].alive
-                                      );
-           entityOffsets.push_back(entity);
+            flatbuffers::Offset<OD_Vector3> entityPosition = CreateOD_Vector3(builder, entities[j].position.x, entities[j].position.y, entities[j].position.z);
+            if (game.vector3IsZero(Vector3(entities[j].position)) and delta){
+                entityPosition = 0;
+            }
 
-       }
-       auto entitiesVector = builder.CreateVector(entityOffsets);
+            flatbuffers::Offset<OD_Vector3> entityVelocity = CreateOD_Vector3(builder, entities[j].velocity.x, entities[j].velocity.y, entities[j].velocity.z);
+            if (game.vector3IsZero(Vector3(entities[j].velocity)) and delta){
+                entityVelocity = 0;
+            }
+
+            auto entity = CreateEntity(builder,
+                                       j,
+                                       entityLabel,
+                                       entityPosition,
+                                       entityVelocity,
+                                       entities[j].alive
+            );
+            entityOffsets.push_back(entity);
+        }
+
+        auto entitiesVector = builder.CreateVector(entityOffsets);
 
         // TODO: save client's source IP and port
-        auto clientSourceIP = builder.CreateString("<Unique Client's IP>");
-        auto clientSourcePoint = CreateSourcePoint(builder, clientSourceIP, 0);
+//        auto clientSourceIP = builder.CreateString("<Unique Client's IP>");
+//        auto clientSourcePoint = CreateSourcePoint(builder, clientSourceIP, 0);
         // TODO: client never sends me their tick number, so modify input schema
-        auto clientTick = Tick(0, deltas[i]->dt);
+        flatbuffers::Offset<Tick> clientTick = CreateTick(builder, 0, states[i]->dt);
         // alive: bool
         // spring: bool
-
         // build the camera
-        auto cameraPosition = OD_Vector3(deltas[i]->camera.position.x,deltas[i]->camera.position.y, deltas[i]->camera.position.z);
-        auto cameraTarget = OD_Vector3(deltas[i]->camera.target.x, deltas[i]->camera.target.y, deltas[i]->camera.target.z);
-        auto cameraUp = OD_Vector3(deltas[i]->camera.up.x, deltas[i]->camera.up.y, deltas[i]->camera.up.z);
+        flatbuffers::Offset<OD_Vector3> cameraPosition = CreateOD_Vector3(builder, states[i]->camera.position.x,states[i]->camera.position.y, states[i]->camera.position.z);
+        if(game.vector3IsZero(states[i]->camera.position) and delta){
+            cameraPosition = 0;
+        }
+
+        flatbuffers::Offset<OD_Vector3> cameraTarget = CreateOD_Vector3(builder, states[i]->camera.target.x, states[i]->camera.target.y, states[i]->camera.target.z);
+        if(game.vector3IsZero(states[i]->camera.target) and delta){
+            cameraTarget = 0;
+        }
+
+        flatbuffers::Offset<OD_Vector3> cameraUp = CreateOD_Vector3(builder, states[i]->camera.up.x, states[i]->camera.up.y, states[i]->camera.up.z);
+        if(game.vector3IsZero(states[i]->camera.up) and delta){
+            cameraUp = 0;
+        }
+
         auto camera = CreateOD_Camera3D(
                 builder,
-                &cameraPosition,
-                &cameraTarget,
-                &cameraUp,
-                deltas[i]->camera.fovy,
-                deltas[i]->camera.projection
+                cameraPosition,
+                cameraTarget,
+                cameraUp,
+                states[i]->camera.fovy,
+                states[i]->camera.projection
         );
-        // grounded: bool
-        // cooldown: float
-        auto position = OD_Vector3(deltas[i]->position.x, deltas[i]->position.y, deltas[i]->position.z);
+
+//        auto position = NULL;
+        flatbuffers::Offset<OD_Vector3> position = CreateOD_Vector3(builder, states[i]->position.x, states[i]->position.y, states[i]->position.z);
+        if(game.vector3IsZero(states[i]->position) and delta){
+            position = 0;
+        }
+
         // facing NOT meeded, encoded in the Camera's direction
-        auto velocity = OD_Vector3(deltas[i]->velocity.x, deltas[i]->velocity.y, deltas[i]->velocity.z);
+        flatbuffers::Offset<OD_Vector3> velocity = CreateOD_Vector3(builder, states[i]->velocity.x, states[i]->velocity.y, states[i]->velocity.z);
+        if(game.vector3IsZero(states[i]->velocity) and delta){
+            velocity = 0;
+        }
         // alive: bool
 
-       auto client = CreateClient(builder,
-                                  clientSourcePoint,
-                                  &clientTick,
-                                  i,
-                                  deltas[i]->alive,
-                                  deltas[i]->sprint,
-                                  camera,
-                                  deltas[i]->grounded,
-                                  deltas[i]->coolDown,
-                                  &position,
-                                  &velocity,
-                                  entitiesVector
-                                  );
-       clientOffsets.push_back(client);
+        auto client = CreateClient(builder,
+                                   NULL,
+                                   clientTick,
+                                   i,
+                                   states[i]->alive,
+                                   states[i]->sprint,
+                                   camera,
+                                   states[i]->grounded,
+                                   states[i]->coolDown,
+                                   position,
+                                   velocity,
+                                   entitiesVector
+        );
+        clientOffsets.push_back(client);
     }
-    // build the OD_Packet of Payload Global State
-
-
-    //TODO: do not statically assign this
-    auto destAddr = builder.CreateString("<Client IP>");
-    auto sourceAddr = builder.CreateString("<Game Server IP>");
-    auto destSourcePoint = CreateDestPoint(builder, destAddr, 0);
-    auto sourceSourcePoint = CreateSourcePoint(builder, sourceAddr, 5450);
-    const Tick serverTick = Tick(this->tickNumber, 1.0/tickRate);
-    auto type = PacketPayload_DifferentialState;
-
-
-//    OD_PacketBuilder packetBuilder(builder);
-    auto diffPacket = CreateOD_Packet(builder,
-                    PacketType_DifferentialState,
-                    destSourcePoint,
-                    sourceSourcePoint,
-                    this->partitionIndex,
-                    false,
-                    &serverTick,
-                    PacketPayload_DifferentialState
-                    );
-
-    builder.Finish(diffPacket);
-    uint8_t* buffer = builder.GetBufferPointer();
-    size_t bufferSize = builder.GetSize();
-
-    cout << "Created a Differential Packet Buffer of size " << bufferSize << " bytes." << endl;
-    return;
 }
 
 size_t GameLobby::getPartitionIndex() const {

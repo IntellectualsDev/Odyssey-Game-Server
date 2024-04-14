@@ -33,8 +33,9 @@
 //    previousState.dt = dt; // provided by client
 //}
 
-void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch) {
+void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch, float serverTickRate) {
 //Continious collision detection.
+    cout << "Entered FPS::Player update method" << endl;
     currentState.dt = dt;
     if(CheckCollisionBoxes(previousState.playerBox,terrainList[3])){
 //        setGrounded(true);
@@ -81,21 +82,34 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
     currentState.camera = previousState.camera;
 //    position = camera.position;
 
-    if(shoot && previousState.coolDown <= 0.0f){
-//        coolDown = 0.3;
-        currentState.coolDown = 0.3;
-//        cout << "SHOOT!" << endl;
-//        Bullet temp(Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(&currentState.camera),0.7f)), Vector3Scale(camera_direction(&currentState.camera),5.0f),(Vector3){0.1f,0.1f,0.1f},
-//                    true);
-        struct FPSEntityState temp;
+    //TODO: evaluate correctness
+    // set the current state's entities list equal to the previous state's entity list:
+    currentState.freeEntities = std::move(previousState.freeEntities);
+    currentState.entities = std::move(previousState.entities);
 
+    if(shoot && previousState.coolDown <= 0.0f){
+
+//        currentState.coolDown = 0.3;
+//        currentState.coolDown = 2*dt;
+        currentState.coolDown = ((1.0 / serverTickRate) / dt) * 2.0;
+        // Check the entities set for free slots to reclaim to create the new entity
+        size_t index;
+        if(currentState.freeEntities.size() > 0){ // free slots are available
+            auto it = currentState.freeEntities.begin();
+            index = *it;
+            currentState.freeEntities.erase(it);
+        }
+        else{ // if there are no free slots append to the end
+            currentState.entities.push_back(FPSEntityState());
+            index =  currentState.entities.size() -1;
+        }
+
+        FPSEntityState& temp = currentState.entities[index];
         temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(currentState.camera),0.7f));
         temp.velocity = Vector3Scale(camera_direction(currentState.camera),5.0f);
 //        temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
         temp.alive = true;
-        //TODO look into ray casting
-        currentState.entities.push_back(temp);
-        //TODO deque object instead of vector
+        temp.claimed = true;
     }
     //TODO
     //store vector terrainList on init sequence and share with clients
@@ -136,18 +150,17 @@ Vector3 FPS_Player::camera_direction(Camera& tcamera) {
 
 void FPS_Player::updateEntities(FPSClientState& currentState, float dt) {
     for (int i = 0; i < currentState.entities.size(); i++) {
-        //Vector3Subtract(entities[i].getPosition(),this->position)
         if(currentState.entities[i].alive){
             Vector3 temp = Vector3Add(
                     currentState.entities[i].position,
                     Vector3Scale(currentState.entities[i].velocity, dt*10));
-//            entities[i].UpdatePosition(temp.x,temp.y,temp.z) ;
             currentState.entities[i].position = (Vector3){temp.x,temp.y,temp.z};
-        }else{
-//            entities.erase(entities.begin()+i);
-            currentState.entities.erase(currentState.entities.begin()+i);
-
-
+        }else if (!currentState.entities[i].alive && currentState.entities[i].claimed){
+            currentState.entities[i] = FPSEntityState(); // clear the element without erasing the index
+            currentState.entities[i].alive = false;
+            currentState.entities[i].claimed = false;
+//            currentState.entities.erase(currentState.entities.begin()+i);
+            currentState.freeEntities.insert(i); // add to the free list
         }
         BoundingBox tempBoundingBox = (BoundingBox){(Vector3){currentState.entities[i].position.x - currentState.entities[i].hitbox.x/2,
                                                               currentState.entities[i].position.y - currentState.entities[i].hitbox.y/2,

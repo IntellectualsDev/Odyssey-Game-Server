@@ -7,19 +7,18 @@
 
 #include <raylib.h>
 #include <iostream>
-//#include "Bullet.h"
 #include <vector>
 #include <raylib.h>
 #include <raymath.h>
-//#include "CircularBuffer.h"
-//#include "Executor.h"
 #include "FPSRules.h"
 
 #endif
 //GAME1_PLAYER_H
 //TODO implement player collision and hitbox, potentially uI too or atleast hands and a gun
 //TODO test implementation of maps and collisions with those
-using namespace std;
+//using namespace std;
+#pragma once
+
 class FPS_Player {
 
 public:
@@ -49,7 +48,7 @@ public:
     static bool CheckCollision(BoundingBox playerBB, BoundingBox wallBB, Vector3& separationVector);
     static void updateEntities(FPSClientState& currentState, float dt);
     static Vector3 camera_direction(Camera& tcamera);
-    static void UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch);
+    static void UpdatePlayer(FPSClientState& previousState, FPSClientState& currentState, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, vector<BoundingBox> &terrainList,vector<BoundingBox> &topBoxVector,bool sprint,bool crouch, float serverTickRate);
 //    Camera3D * getCamera();
 //    Vector3 getHitBox();
 //    void setCameraMode(int temp);

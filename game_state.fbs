@@ -1,18 +1,18 @@
 
 // defined to mirror RayLib's Vector3 def
-struct OD_Vector3 {
+table OD_Vector3 {
     x: float;
     y: float;
     z: float;
 }
 
-struct OD_Vector2 {
+table OD_Vector2 {
     x: float;
     y: float;
 }
 
 // defined to mirror RayLib's BoundingBox def
-struct OD_BoundingBox {
+table OD_BoundingBox {
     min: OD_Vector3;
     max: OD_Vector3;
 }
@@ -48,7 +48,7 @@ table DestPoint {
     port: uint;
 }
 // for both the client and server
-struct Tick{
+table Tick{
     tick_number: uint;
     dt: float;
 }
@@ -69,7 +69,7 @@ table Entity {
     // facing: OD_Vector3; // velocity already encodes this, not needed
     velocity: OD_Vector3;
     alive: bool;
-    born: bool;
+    claimed: bool;
 }
 
 // Define the state of a Client
