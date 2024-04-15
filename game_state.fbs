@@ -106,39 +106,34 @@ table Input {
 }
 
 table ClientInputs {
-    tick: Tick;
     client_inputs:[Input];
 }
 
-table ClientGlobalStates {
-    tick: Tick;
+table ClientStates {
     client_states:[Client];
 }
 
-table ClientDifferentialStates {
-    tick: Tick;
-    client_differentials:[Client];
-}
-
 // These will generate a vector of states for a client, we need each client's vector
-union States{
+union StatesOptions{
     ClientInputs,
-    ClientGlobalStates,
-    ClientDifferentialStates
+    ClientStates,
 }
 
-table Differentials {
+table States {
+    state: StatesOptions;
+}
+
+table AllPlayerStates {
     payload:[States];
 }
 
-table Snapshot{
-    payload:[States];
-}
-
-union Payload{
+union PayloadTypes{
     Input,
-    Differentials,
-    Snapshot,
+    AllPlayerStates
+}
+
+table Payload{
+    payload: PayloadTypes;
 }
 
 table OD_Packet {

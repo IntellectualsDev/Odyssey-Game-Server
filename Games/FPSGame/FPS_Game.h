@@ -20,10 +20,13 @@ public:
     void updateEntities();
     void checkEntityCollisions();
     void calculateDeltas();
-    void buildServerFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
+    void buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
                                flatbuffers::Offset<flatbuffers::String> sourcePoint,
                                flatbuffers::Offset<flatbuffers::String> destPoint,
                                bool reliable,
+                               int serverTick,
+                               float serverDT,
+                               int lobbyNumber,
                                PacketType packetType,
                                bool delta);
 //    void updatePreviousStates();
