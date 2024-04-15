@@ -105,18 +105,40 @@ table Input {
     //implement future support for sliding
 }
 
-table GlobalState {
-    client_state:[Client];
+table ClientInputs {
+    tick: Tick;
+    client_inputs:[Input];
 }
 
-table DifferentialState {
-    client_state:[Client];
+table ClientGlobalStates {
+    tick: Tick;
+    client_states:[Client];
 }
 
-union PacketPayload {
+table ClientDifferentialStates {
+    tick: Tick;
+    client_differentials:[Client];
+}
+
+// These will generate a vector of states for a client, we need each client's vector
+union States{
+    ClientInputs,
+    ClientGlobalStates,
+    ClientDifferentialStates
+}
+
+table Differentials {
+    payload:[States];
+}
+
+table Snapshot{
+    payload:[States];
+}
+
+union Payload{
     Input,
-    GlobalState,
-    DifferentialState
+    Differentials,
+    Snapshot,
 }
 
 table OD_Packet {
@@ -126,8 +148,7 @@ table OD_Packet {
     lobby_number :uint;
     reliable: bool; //TODO: find a way to keep this out of the buffer (but have a way for the transmitter to check if it is reliable)
     tick: Tick;
-    payload: PacketPayload;
-
+    payload: Payload;
 }
 
 root_type OD_Packet;

@@ -43,11 +43,20 @@ struct ClientBuilder;
 struct Input;
 struct InputBuilder;
 
-struct GlobalState;
-struct GlobalStateBuilder;
+struct ClientInputs;
+struct ClientInputsBuilder;
 
-struct DifferentialState;
-struct DifferentialStateBuilder;
+struct ClientGlobalStates;
+struct ClientGlobalStatesBuilder;
+
+struct ClientDifferentialStates;
+struct ClientDifferentialStatesBuilder;
+
+struct Differentials;
+struct DifferentialsBuilder;
+
+struct Snapshot;
+struct SnapshotBuilder;
 
 struct OD_Packet;
 struct OD_PacketBuilder;
@@ -115,60 +124,115 @@ inline const char *EnumNamePacketType(PacketType e) {
   return EnumNamesPacketType()[index];
 }
 
-enum PacketPayload : uint8_t {
-  PacketPayload_NONE = 0,
-  PacketPayload_Input = 1,
-  PacketPayload_GlobalState = 2,
-  PacketPayload_DifferentialState = 3,
-  PacketPayload_MIN = PacketPayload_NONE,
-  PacketPayload_MAX = PacketPayload_DifferentialState
+enum States : uint8_t {
+  States_NONE = 0,
+  States_ClientInputs = 1,
+  States_ClientGlobalStates = 2,
+  States_ClientDifferentialStates = 3,
+  States_MIN = States_NONE,
+  States_MAX = States_ClientDifferentialStates
 };
 
-inline const PacketPayload (&EnumValuesPacketPayload())[4] {
-  static const PacketPayload values[] = {
-    PacketPayload_NONE,
-    PacketPayload_Input,
-    PacketPayload_GlobalState,
-    PacketPayload_DifferentialState
+inline const States (&EnumValuesStates())[4] {
+  static const States values[] = {
+    States_NONE,
+    States_ClientInputs,
+    States_ClientGlobalStates,
+    States_ClientDifferentialStates
   };
   return values;
 }
 
-inline const char * const *EnumNamesPacketPayload() {
+inline const char * const *EnumNamesStates() {
   static const char * const names[5] = {
     "NONE",
-    "Input",
-    "GlobalState",
-    "DifferentialState",
+    "ClientInputs",
+    "ClientGlobalStates",
+    "ClientDifferentialStates",
     nullptr
   };
   return names;
 }
 
-inline const char *EnumNamePacketPayload(PacketPayload e) {
-  if (::flatbuffers::IsOutRange(e, PacketPayload_NONE, PacketPayload_DifferentialState)) return "";
+inline const char *EnumNameStates(States e) {
+  if (::flatbuffers::IsOutRange(e, States_NONE, States_ClientDifferentialStates)) return "";
   const size_t index = static_cast<size_t>(e);
-  return EnumNamesPacketPayload()[index];
+  return EnumNamesStates()[index];
 }
 
-template<typename T> struct PacketPayloadTraits {
-  static const PacketPayload enum_value = PacketPayload_NONE;
+template<typename T> struct StatesTraits {
+  static const States enum_value = States_NONE;
 };
 
-template<> struct PacketPayloadTraits<Input> {
-  static const PacketPayload enum_value = PacketPayload_Input;
+template<> struct StatesTraits<ClientInputs> {
+  static const States enum_value = States_ClientInputs;
 };
 
-template<> struct PacketPayloadTraits<GlobalState> {
-  static const PacketPayload enum_value = PacketPayload_GlobalState;
+template<> struct StatesTraits<ClientGlobalStates> {
+  static const States enum_value = States_ClientGlobalStates;
 };
 
-template<> struct PacketPayloadTraits<DifferentialState> {
-  static const PacketPayload enum_value = PacketPayload_DifferentialState;
+template<> struct StatesTraits<ClientDifferentialStates> {
+  static const States enum_value = States_ClientDifferentialStates;
 };
 
-bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type);
-bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
+bool VerifyStates(::flatbuffers::Verifier &verifier, const void *obj, States type);
+bool VerifyStatesVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
+
+enum Payload : uint8_t {
+  Payload_NONE = 0,
+  Payload_Input = 1,
+  Payload_Differentials = 2,
+  Payload_Snapshot = 3,
+  Payload_MIN = Payload_NONE,
+  Payload_MAX = Payload_Snapshot
+};
+
+inline const Payload (&EnumValuesPayload())[4] {
+  static const Payload values[] = {
+    Payload_NONE,
+    Payload_Input,
+    Payload_Differentials,
+    Payload_Snapshot
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesPayload() {
+  static const char * const names[5] = {
+    "NONE",
+    "Input",
+    "Differentials",
+    "Snapshot",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNamePayload(Payload e) {
+  if (::flatbuffers::IsOutRange(e, Payload_NONE, Payload_Snapshot)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesPayload()[index];
+}
+
+template<typename T> struct PayloadTraits {
+  static const Payload enum_value = Payload_NONE;
+};
+
+template<> struct PayloadTraits<Input> {
+  static const Payload enum_value = Payload_Input;
+};
+
+template<> struct PayloadTraits<Differentials> {
+  static const Payload enum_value = Payload_Differentials;
+};
+
+template<> struct PayloadTraits<Snapshot> {
+  static const Payload enum_value = Payload_Snapshot;
+};
+
+bool VerifyPayload(::flatbuffers::Verifier &verifier, const void *obj, Payload type);
+bool VerifyPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
 
 struct OD_Vector3 FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef OD_Vector3Builder Builder;
@@ -1039,108 +1103,331 @@ inline ::flatbuffers::Offset<Input> CreateInput(
   return builder_.Finish();
 }
 
-struct GlobalState FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef GlobalStateBuilder Builder;
+struct ClientInputs FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef ClientInputsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_CLIENT_STATE = 4
+    VT_TICK = 4,
+    VT_CLIENT_INPUTS = 6
   };
-  const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *client_state() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *>(VT_CLIENT_STATE);
+  const Tick *tick() const {
+    return GetPointer<const Tick *>(VT_TICK);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<Input>> *client_inputs() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Input>> *>(VT_CLIENT_INPUTS);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_CLIENT_STATE) &&
-           verifier.VerifyVector(client_state()) &&
-           verifier.VerifyVectorOfTables(client_state()) &&
+           VerifyOffset(verifier, VT_TICK) &&
+           verifier.VerifyTable(tick()) &&
+           VerifyOffset(verifier, VT_CLIENT_INPUTS) &&
+           verifier.VerifyVector(client_inputs()) &&
+           verifier.VerifyVectorOfTables(client_inputs()) &&
            verifier.EndTable();
   }
 };
 
-struct GlobalStateBuilder {
-  typedef GlobalState Table;
+struct ClientInputsBuilder {
+  typedef ClientInputs Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_client_state(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state) {
-    fbb_.AddOffset(GlobalState::VT_CLIENT_STATE, client_state);
+  void add_tick(::flatbuffers::Offset<Tick> tick) {
+    fbb_.AddOffset(ClientInputs::VT_TICK, tick);
   }
-  explicit GlobalStateBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  void add_client_inputs(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Input>>> client_inputs) {
+    fbb_.AddOffset(ClientInputs::VT_CLIENT_INPUTS, client_inputs);
+  }
+  explicit ClientInputsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<GlobalState> Finish() {
+  ::flatbuffers::Offset<ClientInputs> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<GlobalState>(end);
+    auto o = ::flatbuffers::Offset<ClientInputs>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<GlobalState> CreateGlobalState(
+inline ::flatbuffers::Offset<ClientInputs> CreateClientInputs(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state = 0) {
-  GlobalStateBuilder builder_(_fbb);
-  builder_.add_client_state(client_state);
+    ::flatbuffers::Offset<Tick> tick = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Input>>> client_inputs = 0) {
+  ClientInputsBuilder builder_(_fbb);
+  builder_.add_client_inputs(client_inputs);
+  builder_.add_tick(tick);
   return builder_.Finish();
 }
 
-inline ::flatbuffers::Offset<GlobalState> CreateGlobalStateDirect(
+inline ::flatbuffers::Offset<ClientInputs> CreateClientInputsDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<Client>> *client_state = nullptr) {
-  auto client_state__ = client_state ? _fbb.CreateVector<::flatbuffers::Offset<Client>>(*client_state) : 0;
-  return CreateGlobalState(
+    ::flatbuffers::Offset<Tick> tick = 0,
+    const std::vector<::flatbuffers::Offset<Input>> *client_inputs = nullptr) {
+  auto client_inputs__ = client_inputs ? _fbb.CreateVector<::flatbuffers::Offset<Input>>(*client_inputs) : 0;
+  return CreateClientInputs(
       _fbb,
-      client_state__);
+      tick,
+      client_inputs__);
 }
 
-struct DifferentialState FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef DifferentialStateBuilder Builder;
+struct ClientGlobalStates FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef ClientGlobalStatesBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_CLIENT_STATE = 4
+    VT_TICK = 4,
+    VT_CLIENT_STATES = 6
   };
-  const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *client_state() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *>(VT_CLIENT_STATE);
+  const Tick *tick() const {
+    return GetPointer<const Tick *>(VT_TICK);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *client_states() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *>(VT_CLIENT_STATES);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_CLIENT_STATE) &&
-           verifier.VerifyVector(client_state()) &&
-           verifier.VerifyVectorOfTables(client_state()) &&
+           VerifyOffset(verifier, VT_TICK) &&
+           verifier.VerifyTable(tick()) &&
+           VerifyOffset(verifier, VT_CLIENT_STATES) &&
+           verifier.VerifyVector(client_states()) &&
+           verifier.VerifyVectorOfTables(client_states()) &&
            verifier.EndTable();
   }
 };
 
-struct DifferentialStateBuilder {
-  typedef DifferentialState Table;
+struct ClientGlobalStatesBuilder {
+  typedef ClientGlobalStates Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_client_state(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state) {
-    fbb_.AddOffset(DifferentialState::VT_CLIENT_STATE, client_state);
+  void add_tick(::flatbuffers::Offset<Tick> tick) {
+    fbb_.AddOffset(ClientGlobalStates::VT_TICK, tick);
   }
-  explicit DifferentialStateBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+  void add_client_states(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_states) {
+    fbb_.AddOffset(ClientGlobalStates::VT_CLIENT_STATES, client_states);
+  }
+  explicit ClientGlobalStatesBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  ::flatbuffers::Offset<DifferentialState> Finish() {
+  ::flatbuffers::Offset<ClientGlobalStates> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<DifferentialState>(end);
+    auto o = ::flatbuffers::Offset<ClientGlobalStates>(end);
     return o;
   }
 };
 
-inline ::flatbuffers::Offset<DifferentialState> CreateDifferentialState(
+inline ::flatbuffers::Offset<ClientGlobalStates> CreateClientGlobalStates(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_state = 0) {
-  DifferentialStateBuilder builder_(_fbb);
-  builder_.add_client_state(client_state);
+    ::flatbuffers::Offset<Tick> tick = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_states = 0) {
+  ClientGlobalStatesBuilder builder_(_fbb);
+  builder_.add_client_states(client_states);
+  builder_.add_tick(tick);
   return builder_.Finish();
 }
 
-inline ::flatbuffers::Offset<DifferentialState> CreateDifferentialStateDirect(
+inline ::flatbuffers::Offset<ClientGlobalStates> CreateClientGlobalStatesDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<Client>> *client_state = nullptr) {
-  auto client_state__ = client_state ? _fbb.CreateVector<::flatbuffers::Offset<Client>>(*client_state) : 0;
-  return CreateDifferentialState(
+    ::flatbuffers::Offset<Tick> tick = 0,
+    const std::vector<::flatbuffers::Offset<Client>> *client_states = nullptr) {
+  auto client_states__ = client_states ? _fbb.CreateVector<::flatbuffers::Offset<Client>>(*client_states) : 0;
+  return CreateClientGlobalStates(
       _fbb,
-      client_state__);
+      tick,
+      client_states__);
+}
+
+struct ClientDifferentialStates FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef ClientDifferentialStatesBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TICK = 4,
+    VT_CLIENT_DIFFERENTIALS = 6
+  };
+  const Tick *tick() const {
+    return GetPointer<const Tick *>(VT_TICK);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *client_differentials() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<Client>> *>(VT_CLIENT_DIFFERENTIALS);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_TICK) &&
+           verifier.VerifyTable(tick()) &&
+           VerifyOffset(verifier, VT_CLIENT_DIFFERENTIALS) &&
+           verifier.VerifyVector(client_differentials()) &&
+           verifier.VerifyVectorOfTables(client_differentials()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ClientDifferentialStatesBuilder {
+  typedef ClientDifferentialStates Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_tick(::flatbuffers::Offset<Tick> tick) {
+    fbb_.AddOffset(ClientDifferentialStates::VT_TICK, tick);
+  }
+  void add_client_differentials(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_differentials) {
+    fbb_.AddOffset(ClientDifferentialStates::VT_CLIENT_DIFFERENTIALS, client_differentials);
+  }
+  explicit ClientDifferentialStatesBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<ClientDifferentialStates> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<ClientDifferentialStates>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<ClientDifferentialStates> CreateClientDifferentialStates(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<Tick> tick = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<Client>>> client_differentials = 0) {
+  ClientDifferentialStatesBuilder builder_(_fbb);
+  builder_.add_client_differentials(client_differentials);
+  builder_.add_tick(tick);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<ClientDifferentialStates> CreateClientDifferentialStatesDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<Tick> tick = 0,
+    const std::vector<::flatbuffers::Offset<Client>> *client_differentials = nullptr) {
+  auto client_differentials__ = client_differentials ? _fbb.CreateVector<::flatbuffers::Offset<Client>>(*client_differentials) : 0;
+  return CreateClientDifferentialStates(
+      _fbb,
+      tick,
+      client_differentials__);
+}
+
+struct Differentials FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef DifferentialsBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PAYLOAD_TYPE = 4,
+    VT_PAYLOAD = 6
+  };
+  const ::flatbuffers::Vector<uint8_t> *payload_type() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_PAYLOAD_TYPE);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *payload() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *>(VT_PAYLOAD);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_PAYLOAD_TYPE) &&
+           verifier.VerifyVector(payload_type()) &&
+           VerifyOffset(verifier, VT_PAYLOAD) &&
+           verifier.VerifyVector(payload()) &&
+           VerifyStatesVector(verifier, payload(), payload_type()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DifferentialsBuilder {
+  typedef Differentials Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_payload_type(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> payload_type) {
+    fbb_.AddOffset(Differentials::VT_PAYLOAD_TYPE, payload_type);
+  }
+  void add_payload(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<void>>> payload) {
+    fbb_.AddOffset(Differentials::VT_PAYLOAD, payload);
+  }
+  explicit DifferentialsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Differentials> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Differentials>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Differentials> CreateDifferentials(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> payload_type = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<void>>> payload = 0) {
+  DifferentialsBuilder builder_(_fbb);
+  builder_.add_payload(payload);
+  builder_.add_payload_type(payload_type);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<Differentials> CreateDifferentialsDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<uint8_t> *payload_type = nullptr,
+    const std::vector<::flatbuffers::Offset<void>> *payload = nullptr) {
+  auto payload_type__ = payload_type ? _fbb.CreateVector<uint8_t>(*payload_type) : 0;
+  auto payload__ = payload ? _fbb.CreateVector<::flatbuffers::Offset<void>>(*payload) : 0;
+  return CreateDifferentials(
+      _fbb,
+      payload_type__,
+      payload__);
+}
+
+struct Snapshot FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef SnapshotBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PAYLOAD_TYPE = 4,
+    VT_PAYLOAD = 6
+  };
+  const ::flatbuffers::Vector<uint8_t> *payload_type() const {
+    return GetPointer<const ::flatbuffers::Vector<uint8_t> *>(VT_PAYLOAD_TYPE);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *payload() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *>(VT_PAYLOAD);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_PAYLOAD_TYPE) &&
+           verifier.VerifyVector(payload_type()) &&
+           VerifyOffset(verifier, VT_PAYLOAD) &&
+           verifier.VerifyVector(payload()) &&
+           VerifyStatesVector(verifier, payload(), payload_type()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SnapshotBuilder {
+  typedef Snapshot Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_payload_type(::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> payload_type) {
+    fbb_.AddOffset(Snapshot::VT_PAYLOAD_TYPE, payload_type);
+  }
+  void add_payload(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<void>>> payload) {
+    fbb_.AddOffset(Snapshot::VT_PAYLOAD, payload);
+  }
+  explicit SnapshotBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Snapshot> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Snapshot>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Snapshot> CreateSnapshot(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint8_t>> payload_type = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<void>>> payload = 0) {
+  SnapshotBuilder builder_(_fbb);
+  builder_.add_payload(payload);
+  builder_.add_payload_type(payload_type);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<Snapshot> CreateSnapshotDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<uint8_t> *payload_type = nullptr,
+    const std::vector<::flatbuffers::Offset<void>> *payload = nullptr) {
+  auto payload_type__ = payload_type ? _fbb.CreateVector<uint8_t>(*payload_type) : 0;
+  auto payload__ = payload ? _fbb.CreateVector<::flatbuffers::Offset<void>>(*payload) : 0;
+  return CreateSnapshot(
+      _fbb,
+      payload_type__,
+      payload__);
 }
 
 struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
@@ -1173,21 +1460,21 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const Tick *tick() const {
     return GetPointer<const Tick *>(VT_TICK);
   }
-  PacketPayload payload_type() const {
-    return static_cast<PacketPayload>(GetField<uint8_t>(VT_PAYLOAD_TYPE, 0));
+  Payload payload_type() const {
+    return static_cast<Payload>(GetField<uint8_t>(VT_PAYLOAD_TYPE, 0));
   }
   const void *payload() const {
     return GetPointer<const void *>(VT_PAYLOAD);
   }
   template<typename T> const T *payload_as() const;
   const Input *payload_as_Input() const {
-    return payload_type() == PacketPayload_Input ? static_cast<const Input *>(payload()) : nullptr;
+    return payload_type() == Payload_Input ? static_cast<const Input *>(payload()) : nullptr;
   }
-  const GlobalState *payload_as_GlobalState() const {
-    return payload_type() == PacketPayload_GlobalState ? static_cast<const GlobalState *>(payload()) : nullptr;
+  const Differentials *payload_as_Differentials() const {
+    return payload_type() == Payload_Differentials ? static_cast<const Differentials *>(payload()) : nullptr;
   }
-  const DifferentialState *payload_as_DifferentialState() const {
-    return payload_type() == PacketPayload_DifferentialState ? static_cast<const DifferentialState *>(payload()) : nullptr;
+  const Snapshot *payload_as_Snapshot() const {
+    return payload_type() == Payload_Snapshot ? static_cast<const Snapshot *>(payload()) : nullptr;
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1202,7 +1489,7 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyTable(tick()) &&
            VerifyField<uint8_t>(verifier, VT_PAYLOAD_TYPE, 1) &&
            VerifyOffset(verifier, VT_PAYLOAD) &&
-           VerifyPacketPayload(verifier, payload(), payload_type()) &&
+           VerifyPayload(verifier, payload(), payload_type()) &&
            verifier.EndTable();
   }
 };
@@ -1211,12 +1498,12 @@ template<> inline const Input *OD_Packet::payload_as<Input>() const {
   return payload_as_Input();
 }
 
-template<> inline const GlobalState *OD_Packet::payload_as<GlobalState>() const {
-  return payload_as_GlobalState();
+template<> inline const Differentials *OD_Packet::payload_as<Differentials>() const {
+  return payload_as_Differentials();
 }
 
-template<> inline const DifferentialState *OD_Packet::payload_as<DifferentialState>() const {
-  return payload_as_DifferentialState();
+template<> inline const Snapshot *OD_Packet::payload_as<Snapshot>() const {
+  return payload_as_Snapshot();
 }
 
 struct OD_PacketBuilder {
@@ -1241,7 +1528,7 @@ struct OD_PacketBuilder {
   void add_tick(::flatbuffers::Offset<Tick> tick) {
     fbb_.AddOffset(OD_Packet::VT_TICK, tick);
   }
-  void add_payload_type(PacketPayload payload_type) {
+  void add_payload_type(Payload payload_type) {
     fbb_.AddElement<uint8_t>(OD_Packet::VT_PAYLOAD_TYPE, static_cast<uint8_t>(payload_type), 0);
   }
   void add_payload(::flatbuffers::Offset<void> payload) {
@@ -1266,7 +1553,7 @@ inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
     uint32_t lobby_number = 0,
     bool reliable = false,
     ::flatbuffers::Offset<Tick> tick = 0,
-    PacketPayload payload_type = PacketPayload_NONE,
+    Payload payload_type = Payload_NONE,
     ::flatbuffers::Offset<void> payload = 0) {
   OD_PacketBuilder builder_(_fbb);
   builder_.add_payload(payload);
@@ -1280,33 +1567,66 @@ inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
   return builder_.Finish();
 }
 
-inline bool VerifyPacketPayload(::flatbuffers::Verifier &verifier, const void *obj, PacketPayload type) {
+inline bool VerifyStates(::flatbuffers::Verifier &verifier, const void *obj, States type) {
   switch (type) {
-    case PacketPayload_NONE: {
+    case States_NONE: {
       return true;
     }
-    case PacketPayload_Input: {
-      auto ptr = reinterpret_cast<const Input *>(obj);
+    case States_ClientInputs: {
+      auto ptr = reinterpret_cast<const ClientInputs *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case PacketPayload_GlobalState: {
-      auto ptr = reinterpret_cast<const GlobalState *>(obj);
+    case States_ClientGlobalStates: {
+      auto ptr = reinterpret_cast<const ClientGlobalStates *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case PacketPayload_DifferentialState: {
-      auto ptr = reinterpret_cast<const DifferentialState *>(obj);
+    case States_ClientDifferentialStates: {
+      auto ptr = reinterpret_cast<const ClientDifferentialStates *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;
   }
 }
 
-inline bool VerifyPacketPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types) {
+inline bool VerifyStatesVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
   for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
-    if (!VerifyPacketPayload(
-        verifier,  values->Get(i), types->GetEnum<PacketPayload>(i))) {
+    if (!VerifyStates(
+        verifier,  values->Get(i), types->GetEnum<States>(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline bool VerifyPayload(::flatbuffers::Verifier &verifier, const void *obj, Payload type) {
+  switch (type) {
+    case Payload_NONE: {
+      return true;
+    }
+    case Payload_Input: {
+      auto ptr = reinterpret_cast<const Input *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Payload_Differentials: {
+      auto ptr = reinterpret_cast<const Differentials *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case Payload_Snapshot: {
+      auto ptr = reinterpret_cast<const Snapshot *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return true;
+  }
+}
+
+inline bool VerifyPayloadVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types) {
+  if (!values || !types) return !values && !types;
+  if (values->size() != types->size()) return false;
+  for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+    if (!VerifyPayload(
+        verifier,  values->Get(i), types->GetEnum<Payload>(i))) {
       return false;
     }
   }

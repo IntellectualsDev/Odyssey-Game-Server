@@ -4,6 +4,7 @@
 #include "FPSRules.h"
 #include "FPS_Player.h"
 #include "../../Buffers/LIFOCircularBuffer.h"
+#include "../../game_state_generated.h"
 
 #include <vector>
 #include <map>
@@ -19,6 +20,12 @@ public:
     void updateEntities();
     void checkEntityCollisions();
     void calculateDeltas();
+    void buildServerFlatBuffer(flatbuffers::FlatBufferBuilder& builder,
+                               flatbuffers::Offset<flatbuffers::String> sourcePoint,
+                               flatbuffers::Offset<flatbuffers::String> destPoint,
+                               bool reliable,
+                               PacketType packetType,
+                               bool delta);
 //    void updatePreviousStates();
     void endGame(); // TODO: later
     unique_ptr<FPSClientState> getPlayerCurrentState(size_t index);
@@ -61,8 +68,6 @@ public:
 
     static const bool boundingBoxIsZero(const BoundingBox& box);
 
-
-
 private:
     static constexpr const float wallWidth = 1.0f;
     static constexpr const float wallHeight = 5.0f;
@@ -81,10 +86,6 @@ private:
 //    vector<unique_ptr<FPSClientState>> previousStatesOfPlayers;
 //    vector<unique_ptr<FPSClientState>> currentStatesOfPlayers;
 //    vector<unique_ptr<FPSClientState>> cumulativeDeltaStatesPlayers;
-
-
-
-
 };
 
 #endif //ODYSSEY_GAME_SERVER_FPS_GAME_H

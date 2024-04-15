@@ -69,6 +69,7 @@ struct FPSEntityState {
 
 struct FPSClientState {
     float dt{}; // TODO
+    int tick{};
     Vector3 separationVector{};
     bool topCollision;
 //TODO: make these constants
@@ -93,6 +94,7 @@ struct FPSClientState {
 
     FPSClientState(FPSClientState&& other) noexcept
             : dt(other.dt),
+              tick(other.tick),
               separationVector(std::move(other.separationVector)),
               topCollision(other.topCollision),
               grounded(other.grounded),
@@ -113,6 +115,7 @@ struct FPSClientState {
     FPSClientState& operator=(FPSClientState&& other) noexcept {
         if (this != &other) {
             dt = other.dt;
+            tick = other.tick;
             separationVector = std::move(other.separationVector);
             topCollision = other.topCollision;
             grounded = other.grounded;

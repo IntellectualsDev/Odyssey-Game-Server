@@ -365,6 +365,7 @@ void FPS_Game::checkEntityCollisions() {
 //    }
 }
 
+// the newly populated deltas CircularBuffer is added to from least recent to most recent (with peak returning the most recent)
 void FPS_Game::calculateDeltas() {
 
     FPSClientState delta = FPSClientState();
@@ -427,115 +428,105 @@ void FPS_Game::calculateDeltas() {
 
         }
     }
-//
-//    for(int i = 0; i < currentStatesOfPlayers.size(); i++){
-//        for(int i = 0; )
-//
-//        // For each client "subtract" previous from current (current - previous). Choose current for Booleans
-//
-//        cumulativeDeltaStatesPlayers[i]->dt = 0.2f*currentStatesOfPlayers[i]->dt + cumulativeDeltaStatesPlayers[i]->dt*0.8f; // calculate a rolling average of the dt
-//        cumulativeDeltaStatesPlayers[i]->separationVector = Vector3Subtract(currentStatesOfPlayers[i]->separationVector, previousStatesOfPlayers[i]->separationVector);
-//        cumulativeDeltaStatesPlayers[i]->topCollision = currentStatesOfPlayers[i]->topCollision;
-//        cumulativeDeltaStatesPlayers[i]->grounded = currentStatesOfPlayers[i]->grounded;
-//        cumulativeDeltaStatesPlayers[i]->space = currentStatesOfPlayers[i]->space;
-//        cumulativeDeltaStatesPlayers[i]->playerBox = {Vector3Subtract(currentStatesOfPlayers[i]->playerBox.min, previousStatesOfPlayers[i]->playerBox.min),
-//                                                      Vector3Subtract(currentStatesOfPlayers[i]->playerBox.max, previousStatesOfPlayers[i]->playerBox.max)};
-//        // skip sending the hitbox (static on server and client)
-//        cumulativeDeltaStatesPlayers[i]->coolDown = currentStatesOfPlayers[i]->coolDown - previousStatesOfPlayers[i]->coolDown;
-//
-//        cumulativeDeltaStatesPlayers[i]->camera = {Vector3Subtract(currentStatesOfPlayers[i]->camera.position, previousStatesOfPlayers[i]->camera.position),
-//                                                   Vector3Subtract(currentStatesOfPlayers[i]->camera.target, previousStatesOfPlayers[i]->camera.target),
-//                                                   Vector3Subtract(currentStatesOfPlayers[i]->camera.up, previousStatesOfPlayers[i]->camera.up),
-//                                                   currentStatesOfPlayers[i]->camera.fovy - previousStatesOfPlayers[i]->camera.fovy,
-//                                                   currentStatesOfPlayers[i]->camera.projection - previousStatesOfPlayers[i]->camera.projection};
-//        cumulativeDeltaStatesPlayers[i]->position = Vector3Subtract(currentStatesOfPlayers[i]->position, previousStatesOfPlayers[i]->position);
-//        cumulativeDeltaStatesPlayers[i]->velocity = Vector3Subtract(currentStatesOfPlayers[i]->velocity, previousStatesOfPlayers[i]->velocity);
-//        cumulativeDeltaStatesPlayers[i]->alive = currentStatesOfPlayers[i]->alive;
-//        // skip sending the camera perspective
-//
-//
-//
-//        // calculate the entities' delta values
-//        // Edge case: If a new entity is created, size(currentState's entities) > size(previousState's entities)
-//        //      Expand the size of Delta State's size to current State's size
-//        // Edge case: If an is killed (NOT alive), checkEntityCollisions() sets entities that collide to dead, then next server tick it is deleted. How to handle when updateEntities() deletes entity
-//        //      size(previous States) > size(currentStates)
-//
-//
-//
-//        // If the deltas and current state have mismatched size, resize delta to match and fill with default states
-//        cout << "i = " << i << ", Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;
-//
-////        size_t oldSize = cumulativeDeltaStatesPlayers[i]->entities.size();
-////        cout << "old Size: " << oldSize << endl;
-////        if(oldSize < currentStatesOfPlayers[i]->entities.size()){
-////            cumulativeDeltaStatesPlayers[i]->entities.resize(currentStatesOfPlayers[i]->entities.size());
-////
-////            for(int j = oldSize; j < currentStatesOfPlayers[i]->entities.size(); j++){
-////                cumulativeDeltaStatesPlayers[i]->entities[j] = FPSEntityState();
-////            }
-////        }
-//
-//        for(int j = 0; j < currentStatesOfPlayers[i]->entities.size(); j++){
-////            cout << "Current State size: " << currentStatesOfPlayers[i]->entities.size() << "\tPrevious state size: " << previousStatesOfPlayers[i]->entities.size() << "\t Delta state size: " << cumulativeDeltaStatesPlayers[i]->entities.size() << endl;
-//            // skip bullet model as it is static
-//
-//            cumulativeDeltaStatesPlayers[i]->entities[j].alive = currentStatesOfPlayers[i]->entities[j].alive;
-//            cout << "Break 1 , i = " << i << ", j = "  << j << endl;
-//
-//            if(previousStatesOfPlayers[i]->entities.size() < currentStatesOfPlayers[i]->entities.size()){
-//                cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = {Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.min, Vector3 {0, 0, 0}),
-//                                                                          Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.max, Vector3 {0, 0, 0})};
-//                cumulativeDeltaStatesPlayers[i]->entities[j].position = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].position, Vector3 {0, 0, 0});
-//                cumulativeDeltaStatesPlayers[i]->entities[j].velocity = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].velocity, Vector3 {0, 0, 0});
-//            }
-//            else{
-//                cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = {Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.min, previousStatesOfPlayers[i]->entities[j].bulletBox.min),
-//                                                                          Vector3Subtract(currentStatesOfPlayers[i]->entities[j].bulletBox.max, previousStatesOfPlayers[i]->entities[j].bulletBox.max)};
-//                cout << "Break 2 , i = " << i << ", j = "  << j << endl;
-//                cumulativeDeltaStatesPlayers[i]->entities[j].position = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].position, previousStatesOfPlayers[i]->entities[j].position);
-//                cout << "Break 3 , i = " << i << ", j = "  << j << endl;
-//                cumulativeDeltaStatesPlayers[i]->entities[j].velocity = Vector3Subtract(currentStatesOfPlayers[i]->entities[j].velocity, previousStatesOfPlayers[i]->entities[j].velocity);
-//                cout << "Break 4 , i = " << i << ", j = "  << j << endl;
-//            }
-////            cumulativeDeltaStatesPlayers[i]->entities[j].bulletBox = BoundingBox {Vector3 {0, 0, 0}, Vector3 {0, 0, 0}};
-//            // entity's hitbox is static, so no update is required.
-//        }
-//        cout << "Finished calculating Deltas " << endl;
-//    }
-//
-//    printFPSClientState(*cumulativeDeltaStatesPlayers[0]);
 }
 
-//void FPS_Game::updatePreviousStates() {
-//    for(int i = 0; i < previousStatesOfPlayers.size(); i++){
-//        if(currentStatesOfPlayers[i] != nullptr){
-//            if(previousStatesOfPlayers[i] == nullptr) {
-//                previousStatesOfPlayers[i] = make_unique<FPSClientState>();
-//            }
-//            *previousStatesOfPlayers[i] = *currentStatesOfPlayers[i];
-//        }
-//        else{
-////            delete previousStatesOfPlayers[i]; // CAUSES ISSUES!
-//            previousStatesOfPlayers[i] = nullptr;
-//        }
-//
-////       delete previousStatesOfPlayers[i];
-////       previousStatesOfPlayers[i] = nullptr;
-////
-////       if(currentStatesOfPlayers[i] != nullptr){
-////           previousStatesOfPlayers[i] = new FPSClientState(*currentStatesOfPlayers[i]);
-////       }
-//    }
-//}
+void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
+                                     flatbuffers::Offset<flatbuffers::String> sourcePoint,
+                                     flatbuffers::Offset<flatbuffers::String> destPoint, bool reliable,
+                                     PacketType packetType, bool delta) {
+    auto& map = delta ? deltaStates : playerStates;
+    for(auto& playerPair: map){
+        size_t playerID = playerPair.first;
+        auto& states = playerPair.second;
+        std::vector<flatbuffers::Offset<Client>> clientOffsets;
+        for(int i = 0; i < states.getCount(); i++){
+            auto& state = states.peekAtIndex(i);
 
-//unique_ptr<FPSClientState> FPS_Game::getPlayerCurrentState(size_t index) {
-//    return std::move(currentStatesOfPlayers[index]);
-//}
-//
-//unique_ptr<FPSClientState> FPS_Game::getPlayerPreviousState(size_t index) {
-//    return std::move(previousStatesOfPlayers[index]);
-//}
+            const auto& entities = state->entities;
+            std::vector<flatbuffers::Offset<Entity>> entityOffsets;
+            for(int j = 0; j < entities.size(); j++) {
+                auto entityLabel = builder.CreateString("<blank Entity label>");
+
+                flatbuffers::Offset<OD_Vector3> entityPosition = CreateOD_Vector3(builder, entities[j].position.x, entities[j].position.y, entities[j].position.z);
+                if (vector3IsZero(Vector3(entities[j].position)) and delta){
+                    entityPosition = 0;
+                }
+
+                flatbuffers::Offset<OD_Vector3> entityVelocity = CreateOD_Vector3(builder, entities[j].velocity.x, entities[j].velocity.y, entities[j].velocity.z);
+                if (vector3IsZero(Vector3(entities[j].velocity)) and delta){
+                    entityVelocity = 0;
+                }
+
+                auto entity = CreateEntity(builder,
+                                           j,
+                                           entityLabel,
+                                           entityPosition,
+                                           entityVelocity,
+                                           entities[j].alive
+                );
+                entityOffsets.push_back(entity);
+            }
+            auto entitiesVector = builder.CreateVector(entityOffsets);
+
+            //TODO: take the client tick, normalize to server tick and store in FPSClientState on Client input (UpdatePlayer)
+            flatbuffers::Offset<Tick> clientTick = CreateTick(builder, state->tick, state->dt);
+
+            flatbuffers::Offset<OD_Vector3> cameraPosition = CreateOD_Vector3(builder, state->camera.position.x,state->camera.position.y, state->camera.position.z);
+            if(vector3IsZero(state->camera.position) and delta){
+                cameraPosition = 0;
+            }
+
+            flatbuffers::Offset<OD_Vector3> cameraTarget = CreateOD_Vector3(builder, state->camera.target.x, state->camera.target.y, state->camera.target.z);
+            if(vector3IsZero(state->camera.target) and delta){
+                cameraTarget = 0;
+            }
+
+            flatbuffers::Offset<OD_Vector3> cameraUp = CreateOD_Vector3(builder, state->camera.up.x, state->camera.up.y, state->camera.up.z);
+            if(vector3IsZero(state->camera.up) and delta){
+                cameraUp = 0;
+            }
+
+            auto camera = CreateOD_Camera3D(
+                    builder,
+                    cameraPosition,
+                    cameraTarget,
+                    cameraUp,
+                    state->camera.fovy,
+                    state->camera.projection
+            );
+
+            flatbuffers::Offset<OD_Vector3> position = CreateOD_Vector3(builder, state->position.x, state->position.y, state->position.z);
+            if(vector3IsZero(state->position) and delta){
+                position = 0;
+            }
+
+            flatbuffers::Offset<OD_Vector3> velocity = CreateOD_Vector3(builder, state->velocity.x, state->velocity.y, state->velocity.z);
+            if(vector3IsZero(state->velocity) and delta){
+                velocity = 0;
+            }
+
+            auto client = CreateClient(builder,
+                                       NULL,
+                                       clientTick,
+                                       i,
+                                       state->alive,
+                                       state->sprint,
+                                       camera,
+                                       state->grounded,
+                                       state->coolDown,
+                                       position,
+                                       velocity,
+                                       entitiesVector
+            );
+
+            clientOffsets.push_back(client);
+        }
+
+        // TODO: the list of states for a player has been generated but the list of lists needs to be generated now
+        //  specifically, building the "Differentials" or the "Snapshot" table
+    }
+}
+
 
 const float FPS_Game::getWallWidth() {
     return wallWidth;
@@ -553,10 +544,6 @@ const float FPS_Game::getFloorLength() {
     return floorLength;
 }
 
-//const vector<FPSClientState> &FPS_Game::getBuffer() {
-//    return buffer;
-//}
-
 const vector<BoundingBox> &FPS_Game::getTerrainVector() {
     return terrainVector;
 }
@@ -564,16 +551,3 @@ const vector<BoundingBox> &FPS_Game::getTerrainVector() {
 const vector<BoundingBox> &FPS_Game::getTopBoxVector() {
     return topBoxVector;
 }
-//
-//const vector<unique_ptr<FPSClientState>> &FPS_Game::getPreviousStatesOfPlayers() const {
-//    return previousStatesOfPlayers;
-//}
-//
-//const vector<unique_ptr<FPSClientState>> &FPS_Game::getCurrentStatesOfPlayers() const {
-//    return currentStatesOfPlayers;
-//}
-//
-//const vector<unique_ptr<FPSClientState>> &FPS_Game::getCumulativeDeltaStatesPlayers() const {
-//    return cumulativeDeltaStatesPlayers;
-//}
-

@@ -61,6 +61,7 @@ private:
     mutex& consoleMutex;
 
     uint32_t tickNumber = 0;
+    const int ticksTillGlobalState = 20;
 //    const float tickRate = 60.0f;
     std::chrono::steady_clock::time_point lastTick;
 
