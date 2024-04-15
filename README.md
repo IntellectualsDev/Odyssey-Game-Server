@@ -42,7 +42,7 @@ FlatBuffers is utilized for its high-performance serialization capabilities, all
 
 
 ## Docker Container
-To setup your Docker development environment (Debian based Linux (Ubunut, Linux Mint, etc):
+To setup your Docker development environment (Debian based Linux (Ubunutu, Linux Mint, etc):
   * `sudo apt-get install docker.io`
   * `sudo systemctl enable --now docker` Enable docker to run
   * `sudo usermod -aG docker $USER` Add your user to the user group to prevent always using sudo
