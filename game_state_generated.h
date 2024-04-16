@@ -1383,15 +1383,19 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef OD_PacketBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_PACKET_TYPE = 4,
-    VT_DEST_POINT = 6,
-    VT_SOURCE_POINT = 8,
-    VT_LOBBY_NUMBER = 10,
-    VT_RELIABLE = 12,
-    VT_TICK = 14,
-    VT_PAYLOAD = 16
+    VT_DEST_CLIENT_ID = 6,
+    VT_DEST_POINT = 8,
+    VT_SOURCE_POINT = 10,
+    VT_LOBBY_NUMBER = 12,
+    VT_RELIABLE = 14,
+    VT_TICK = 16,
+    VT_PAYLOAD = 18
   };
   PacketType packet_type() const {
     return static_cast<PacketType>(GetField<int8_t>(VT_PACKET_TYPE, 0));
+  }
+  int32_t dest_client_id() const {
+    return GetField<int32_t>(VT_DEST_CLIENT_ID, 0);
   }
   const DestPoint *dest_point() const {
     return GetPointer<const DestPoint *>(VT_DEST_POINT);
@@ -1414,6 +1418,7 @@ struct OD_Packet FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_PACKET_TYPE, 1) &&
+           VerifyField<int32_t>(verifier, VT_DEST_CLIENT_ID, 4) &&
            VerifyOffset(verifier, VT_DEST_POINT) &&
            verifier.VerifyTable(dest_point()) &&
            VerifyOffset(verifier, VT_SOURCE_POINT) &&
@@ -1434,6 +1439,9 @@ struct OD_PacketBuilder {
   ::flatbuffers::uoffset_t start_;
   void add_packet_type(PacketType packet_type) {
     fbb_.AddElement<int8_t>(OD_Packet::VT_PACKET_TYPE, static_cast<int8_t>(packet_type), 0);
+  }
+  void add_dest_client_id(int32_t dest_client_id) {
+    fbb_.AddElement<int32_t>(OD_Packet::VT_DEST_CLIENT_ID, dest_client_id, 0);
   }
   void add_dest_point(::flatbuffers::Offset<DestPoint> dest_point) {
     fbb_.AddOffset(OD_Packet::VT_DEST_POINT, dest_point);
@@ -1467,6 +1475,7 @@ struct OD_PacketBuilder {
 inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     PacketType packet_type = PacketType_CreateLobby,
+    int32_t dest_client_id = 0,
     ::flatbuffers::Offset<DestPoint> dest_point = 0,
     ::flatbuffers::Offset<SourcePoint> source_point = 0,
     uint32_t lobby_number = 0,
@@ -1479,6 +1488,7 @@ inline ::flatbuffers::Offset<OD_Packet> CreateOD_Packet(
   builder_.add_lobby_number(lobby_number);
   builder_.add_source_point(source_point);
   builder_.add_dest_point(dest_point);
+  builder_.add_dest_client_id(dest_client_id);
   builder_.add_reliable(reliable);
   builder_.add_packet_type(packet_type);
   return builder_.Finish();

@@ -16,6 +16,13 @@ public:
         return GetOD_Packet(data.get());
     }
 
+    const uint8_t* getByteView() const {
+        return data.get();
+    }
+
+    size_t getSize() const {
+        return size;
+    }
 
 private:
     std::unique_ptr<uint8_t[]> data;

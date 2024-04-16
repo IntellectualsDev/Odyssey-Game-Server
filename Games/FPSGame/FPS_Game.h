@@ -21,8 +21,9 @@ public:
     void checkEntityCollisions();
     void calculateDeltas();
     void buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
-                               flatbuffers::Offset<flatbuffers::String> sourcePoint,
-                               flatbuffers::Offset<flatbuffers::String> destPoint,
+                               flatbuffers::Offset<SourcePoint> sourcePoint,
+                               flatbuffers::Offset<DestPoint> destPoint,
+                               int clientID,
                                bool reliable,
                                int serverTick,
                                float serverDT,

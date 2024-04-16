@@ -7,6 +7,7 @@
 
 #include "LobbyManagementService.h"
 #include "../Games/FPSGame/FPS_Game.h"
+#include "../Components/ConnectionManager.h"
 
 #include <thread>
 #include <mutex>
@@ -23,7 +24,7 @@ using namespace std;
 
 class GameLobby {
 public:
-    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, mutex& consoleMutex, bool showGUI);
+    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, ConnectionManager* connectionManager, mutex& consoleMutex, bool showGUI);
 //    GameLobby(LobbyManagementService& lobbyManagementService): LobbyServices(lobbyManagementService){};
     void start();
     void stop();
@@ -34,7 +35,6 @@ private:
     void run();
     void processPacket(unique_ptr<BufferHandler> packet);
     void update(unique_ptr<BufferHandler> packet);
-//    void
     void render();
     void sendDifferentials();
     void sendSnapShot();
@@ -53,6 +53,8 @@ private:
 //    LobbyManagementService* LobbyServices;
     PartitionedPacketBuffer* receiveBuffer;
     PacketBuffer* outputBuffer;
+    ConnectionManager* connectionManager;
+    FPS_Game game;
 
     size_t partitionIndex;
 
@@ -65,7 +67,7 @@ private:
 //    const float tickRate = 60.0f;
     std::chrono::steady_clock::time_point lastTick;
 
-    FPS_Game game;
+
 
     bool showGUI;
     int screenWidth;

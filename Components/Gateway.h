@@ -13,13 +13,14 @@
 
 #include "../Buffers/PartitionedPacketBuffer.h"
 #include "../game_state_generated.h"
+#include "../Components/ConnectionManager.h"
 
 using namespace std;
 
 
 class Gateway {
 public:
-    Gateway(string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, int maxConnections=3500, int numChannels=20, int incomingBandwith=0, int outgoingBandwith=0);
+    Gateway(string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, ConnectionManager* connectionManager, int maxConnections=3500, int numChannels=20, int incomingBandwith=0, int outgoingBandwith=0);
     ~Gateway();
 
     void start();
@@ -50,7 +51,8 @@ private:
     atomic<bool> shutdownFlag;
 
     PartitionedPacketBuffer* receiveBuffer;
-    map<string, pair<string, ENetPeer *>> clientList;
+//    map<string, pair<string, ENetPeer *>> clientList;
+    ConnectionManager * connectionManager;
 
 };
 

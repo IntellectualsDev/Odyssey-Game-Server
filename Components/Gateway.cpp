@@ -8,8 +8,8 @@
 #include "../Data Structs/BufferHandler.h"
 #include <memory>
 
-Gateway::Gateway(std::string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, int maxConnections, int numChannels, int incomingBandwith,
-                 int outgoingBandwith) : receiveBuffer(buffer) {
+Gateway::Gateway(std::string gatewayIP, int gatewayPort, PartitionedPacketBuffer* buffer, ConnectionManager* connectionManager,  int maxConnections, int numChannels, int incomingBandwith,
+                 int outgoingBandwith) : receiveBuffer(buffer), connectionManager(connectionManager) {
     char* serverAddressChar = new char[gatewayIP.length()+1]; // convert string IP to char * used in enet set host ip
     strcpy(serverAddressChar, gatewayIP.c_str());
     printf("char array for Gateway Server = %s\n", serverAddressChar);
@@ -111,28 +111,29 @@ void Gateway::shutdown() {
     ENetEvent event;
     shutdownFlag.store(false);
 
-    if (!clientList.empty()){
-        printf("Disconnecting from Gateway Server's Clients:\n");
-        map<string, pair<string, ENetPeer *>>::iterator it;
-
-        for(it = clientList.begin(); it != clientList.end(); it++){
-            enet_peer_disconnect(it->second.second, 0);
-
-            while(enet_host_service (server, &event, 200) > 0){
-                switch(event.type) {
-                    case ENET_EVENT_TYPE_RECEIVE:
-                        enet_packet_destroy(event.packet);
-                        break;
-                    case ENET_EVENT_TYPE_DISCONNECT:
-                        printf("\t%x:%u disconnected\n", it->second.second->address.host,
-                               it->second.second->address.port);
-                }
-            }
-
-            // if a disconnect event is not received, manually kill the connection
-            enet_peer_reset(it->second.second);
-        }
-    }
+    //TODO: refactor to use the ConnectionManager's PlayerPeers map
+//    if (!clientList.empty()){
+//        printf("Disconnecting from Gateway Server's Clients:\n");
+//        map<string, pair<string, ENetPeer *>>::iterator it;
+//
+//        for(it = clientList.begin(); it != clientList.end(); it++){
+//            enet_peer_disconnect(it->second.second, 0);
+//
+//            while(enet_host_service (server, &event, 200) > 0){
+//                switch(event.type) {
+//                    case ENET_EVENT_TYPE_RECEIVE:
+//                        enet_packet_destroy(event.packet);
+//                        break;
+//                    case ENET_EVENT_TYPE_DISCONNECT:
+//                        printf("\t%x:%u disconnected\n", it->second.second->address.host,
+//                               it->second.second->address.port);
+//                }
+//            }
+//
+//            // if a disconnect event is not received, manually kill the connection
+//            enet_peer_reset(it->second.second);
+//        }
+//    }
 
     // Notify waiting threads to wake up and complete any work, for the future. Can be removed in current implementation.
     {
@@ -161,6 +162,6 @@ const atomic<bool> &Gateway::getShutdownFlag() const {
     return shutdownFlag;
 }
 
-const map<string, pair<string, ENetPeer *>> &Gateway::getClientList() const {
-    return clientList;
-}
+//const map<string, pair<string, ENetPeer *>> &Gateway::getClientList() const {
+//    return clientList;
+//}

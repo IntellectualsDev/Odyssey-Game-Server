@@ -6,7 +6,13 @@
 #include "../game_state_generated.h"
 
 //GameLobby::GameLobby(PartitionedPacketBuffer &receiveBuffer, PacketBuffer &outputBuffer, mutex& consoleMutex) : LobbyServices(receiveBuffer, outputBuffer), consoleMutex(consoleMutex) {
-GameLobby::GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, std::mutex &consoleMutex, bool showGUI): receiveBuffer(receiveBuffer), outputBuffer(outputBuffer), consoleMutex(consoleMutex), game(), showGUI(showGUI){
+GameLobby::GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, ConnectionManager* connectionManager, std::mutex &consoleMutex, bool showGUI):
+receiveBuffer(receiveBuffer),
+outputBuffer(outputBuffer),
+consoleMutex(consoleMutex),
+connectionManager(connectionManager),
+game(),
+showGUI(showGUI){
 //    if(showGUI){
 //        InitWindow(0, 0, "Shooter Game");
 //        screenWidth = GetMonitorWidth(0);
@@ -32,7 +38,7 @@ GameLobby::GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outpu
     // TODO: will be removed once, there is handshake and will be dynamically called
     // given the initial ID of 0
     game.createNewPlayer((Vector3){0,2,1},(Vector3){0,0,0}, 1.0f/60.0f);
-
+    connectionManager->addPlayer(0, IPEndpoint({"Enter Joseph IP", -99}));
 }
 
 void GameLobby::start() {
@@ -78,11 +84,9 @@ void GameLobby::run() {
         }
 
         if(tickNumber % ticksTillGlobalState == 0){ // every 20 differentials send a global state
-            // send global snapshot
+           sendSnapShot();
         }
-        else{
-            // send a differential
-            sendDifferentials();
+        else{ sendDifferentials();
         }
 
 //        sendSnapShot();
@@ -192,7 +196,6 @@ void GameLobby::update(unique_ptr<BufferHandler> packet) {
     game.updateEntities();
     game.checkEntityCollisions();
     game.calculateDeltas();
-//    game.updatePreviousStates();
 
     // TODO: both of these lead to SIGSEGV faults
 
@@ -248,8 +251,74 @@ void GameLobby::render() {
     }
 }
 
+void GameLobby::sendSnapShot() {
+    for(auto& player: connectionManager->getPlayerEndpoints()){
+        flatbuffers::FlatBufferBuilder builder(1024);
+
+        auto srcpoint = CreateSourcePoint(builder, builder.CreateString("<Dynamically Insert Server's IP Here>"), -99);
+        auto destpoint = CreateDestPoint(builder, builder.CreateString(player.second.ip), player.second.port);
+
+
+        //TODO: determine if snapshot packets should be sent reliably or is there a significant performance hit
+        game.buildServerFlatBuffer(builder,
+                                   srcpoint,
+                                   destpoint,
+                                   player.first,
+                                   true,
+                                   tickNumber,
+                                   (1.0/tickRate),
+                                   partitionIndex,
+                                   PacketType_GlobalState,
+                                   false);
+
+        uint8_t* buffer = builder.GetBufferPointer();
+        size_t size = builder.GetSize();
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            cout <<  "Snapshot Flatbuffer of size "<< size << " bytes was built." << endl;
+        }
+
+        //TODO: evaluate the performance of this. Could be more efficient to bypass the BufferHandler, due to a redundant memcpy
+        std::unique_ptr<uint8_t[]> bufferCopy(new uint8_t[size]);
+        memcpy(bufferCopy.get(), buffer, size);
+
+        unique_ptr<BufferHandler> outputBufferHandler = std::make_unique<BufferHandler>(std::move(bufferCopy), builder.GetSize());
+        outputBuffer->addPacket(std::move(outputBufferHandler));
+    }
+}
+
 void GameLobby::sendDifferentials() {
-    for(auto& player: )
+    for(auto& player: connectionManager->getPlayerEndpoints()){
+        flatbuffers::FlatBufferBuilder builder(1024);
+
+        auto srcpoint = CreateSourcePoint(builder, builder.CreateString("<Dynamically Insert Server's IP Here>"), -99);
+        auto destpoint = CreateDestPoint(builder, builder.CreateString(player.second.ip), player.second.port);
+
+        game.buildServerFlatBuffer(builder,
+                                   srcpoint,
+                                   destpoint,
+                                   player.first,
+                                   false,
+                                   tickNumber,
+                                   (1.0/tickRate),
+                                   partitionIndex,
+                                   PacketType_DifferentialState,
+                                   true);
+
+        uint8_t* buffer = builder.GetBufferPointer();
+        size_t size = builder.GetSize();
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            cout <<  "Differential Flatbuffer of size "<< size << " bytes was built." << endl;
+        }
+
+        //TODO: evaluate the performance of this. Could be more efficient to bypass the BufferHandler, due to a redundant memcpy
+        std::unique_ptr<uint8_t[]> bufferCopy(new uint8_t[size]);
+        memcpy(bufferCopy.get(), buffer, size);
+
+        unique_ptr<BufferHandler> outputBufferHandler = std::make_unique<BufferHandler>(std::move(bufferCopy), builder.GetSize());
+        outputBuffer->addPacket(std::move(outputBufferHandler));
+    }
 }
 
 void GameLobby::buildStateFlatBuffer(vector<unique_ptr<FPSClientState>>& states,

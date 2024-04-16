@@ -68,11 +68,12 @@ int main() {
     //    ______________________________Official Game Server Code______________________________________________
     PartitionedPacketBuffer* receiveBuffer = new PartitionedPacketBuffer(100, 500, consoleMutex);
     PacketBuffer* outputBuffer = new PacketBuffer();
+    ConnectionManager* connectionManager = new ConnectionManager();
 
     //create the ENetHost here for Transmitter, and ENetAddress corresponding to the host here
 
     auto gateway = new Gateway("192.168.1.12", 5450, receiveBuffer);
-    auto transmitter = new Transmitter("192.168.1.12", 5451, outputBuffer);
+    auto transmitter = new Transmitter("192.168.1.12", 5451, outputBuffer,  connectionManager, consoleMutex);
 
     GameLobby gameLobby(receiveBuffer, outputBuffer, consoleMutex, true);
 

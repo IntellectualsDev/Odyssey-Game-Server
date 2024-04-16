@@ -4,12 +4,21 @@
 
 #include "Transmitter.h"
 
-Transmitter::Transmitter(string gatewayIP, int port, PacketBuffer *transmitBuffer, int maxConnections, int numChannels, int incomingBandwith,
+Transmitter::Transmitter(string gatewayIP,
+                         int port,
+                         PacketBuffer *transmitBuffer,
+                         ConnectionManager * connectionManager,
+                         mutex& consoleMutex,
+                         int maxConnections,
+                         int numChannels,
+                         int incomingBandwith,
                          int outgoingBandwith):
     port(port),
     transmitBuffer(transmitBuffer),
-    peers(),
-    shutdownFlag(false){
+    connectionManager(connectionManager),
+    consoleMutex(consoleMutex),
+    shutdownFlag(false)
+{
         char* serverAddressChar = new char[gatewayIP.length()+1]; // convert string IP to char * used in enet set host ip
         strcpy(serverAddressChar, gatewayIP.c_str());
         printf("char array for Gateway Server = %s\n", serverAddressChar);
@@ -33,11 +42,20 @@ void Transmitter::start() {
     transmitThread = thread(&Transmitter::transmitLoop, this);
 }
 
+void Transmitter::shutdown() {
+    shutdownFlag.store(true);
+    transmitBuffer->notifyAll();
+
+    if(transmitThread.joinable()){
+        transmitThread.join();
+    }
+}
+
 void Transmitter::transmitLoop() {
     while(!shutdownFlag.load()){
-        auto packet = transmitBuffer->removePacket();
-        if(packet){
-            transmitPacket(std::move(packet));
+        auto bufferHandler = transmitBuffer->removePacket();
+        if(bufferHandler != nullptr){
+            transmitPacket(std::move(bufferHandler));
         }
         else{
             fprintf(stderr, "ERR in Transmitter's transmitLoop() method | line 27\n\tTransmitter pulled a NULL packet from buffer\n\n");
@@ -47,48 +65,75 @@ void Transmitter::transmitLoop() {
 }
 
 void Transmitter::transmitPacket(unique_ptr<BufferHandler> packet){
-//    ENetEvent event;
-//    ENetAddress clientAddress = packet->toSendAddress;
-//
-//    if(packet->isSendAddressSet){
-//        //TODO: search the peers vector and ensure that peer does not exist, then add
-//        ENetPeer* client = enet_host_connect(server, &clientAddress, 1, 0);
-//        for(int i = 0; i < peers.size(); i++){
-//            if()
-//        }
-//
-//
-//
-//        if(client == nullptr){
-//            fprintf(stderr, "ERR In Transmitter's Transmit method() | line 41\n\tTransmitter's ENet Host cannot support initiating a new ENet Connection\n\n");
-//
-//            // TODO: implement error catching in case ENetHost cannot support creating a new connection
-//            exit(EXIT_FAILURE); // temporary
-//        }
-//        if(enet_host_service(server, &event, 6000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT){
-//            printf("Transmitter Connected to the server successfully\n\tIP: %u\n\tPort: %s\n\n", server->address.host, to_string(port).c_str());
-//        }
-//        else{
-//            enet_peer_reset(client);
-//            fprintf(stderr, "ERR In Transmitter's Transmit method() | line 51\n\tFailed to connect to server\n\tIP: %u\n\tPort: %s\n\n", server->address.host, to_string(port).c_str());
-//        }
-//
-//        enet_peer_send(client, 0, packet->packet);
-//        enet_host_flush(server);
-//
-//        printf("Transmitter Sent packet\n\tdata = %s", packet->packet->data);
-//    }
-//    else{
-//        fprintf(stderr, "ERR In Transmitter's Transmit method() | Line 60\n\tPacket to be sent does not have recipient data set\n\n");
-//    }
+    ENetEvent event;
+
+    const OD_Packet* OD_Packet = packet->getPacketView();
+
+    enet_uint32 flags = 0;
+    if(OD_Packet->reliable()){
+        flags = ENET_PACKET_FLAG_RELIABLE;
+    }
+
+    ENetPacket* packetToSend = enet_packet_create(packet->getByteView(), packet->getSize(), flags);
+    int clientID = OD_Packet->dest_client_id();
+    if(!connectionManager->isPlayerConnected(clientID)){
+        ENetPeer * client = connect(OD_Packet->dest_point()->address()->str(), OD_Packet->dest_point()->port());
+        if(client != nullptr){
+            connectionManager->setPeer(clientID, client);
+        }
+        else{
+            fprintf(stderr, "Transmit Error: Unable to connect to client ID#%d %s:%d, ENetPeer* is nullptr\n", clientID, OD_Packet->dest_point()->address()->str().c_str(), OD_Packet->dest_point()->port());
+            return;
+        }
+
+        enet_host_service(server, & event, 0);
+        enet_uint32 flags = 0;
+        if(OD_Packet->reliable()){
+            flags = ENET_PACKET_FLAG_RELIABLE;
+        }
+        ENetPacket* packetToSend = enet_packet_create(packet->getByteView(), packet->getSize(), flags);
+        enet_peer_send(client, 0, packetToSend);
+        enet_host_flush(server);
+
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            printf("Game Server's Transmitter Sent packet\n\tpayload_type = %s\n", EnumNamePacketType(OD_Packet->packet_type()));
+        }
+    }
 }
 
-void Transmitter::shutdown() {
-    shutdownFlag.store(true);
-    transmitBuffer->notifyAll();
+ENetPeer * Transmitter::connect(const std::string &clientIP, int port) {
+    ENetAddress clientAddress;
+    ENetEvent event;
 
-    if(transmitThread.joinable()){
-        transmitThread.join();
+    char* clientAddressChar = new char[clientIP.length()+1];
+    strcpy(clientAddressChar,clientIP.c_str());
+
+    enet_address_set_host_ip(& clientAddress, clientAddressChar);
+    clientAddress.port = port;
+    ENetPeer * client = enet_host_connect(server, &clientAddress, 2, 0);
+    if(client == nullptr){
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            fprintf(stderr, "Client @ %s:%d not available for initiating an ENet connection\n", clientIP.c_str(), port);
+        }
+
+        //TODO: add error checking or create a flag
+    }
+    if(enet_host_service(server, &event, 3000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT){
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            printf("Connected to the Client %s:%p successfully\n\tIP: %s\n\tPort: %s\n", clientIP.c_str(), to_string(port).c_str());
+        }
+        return client;
+    }
+    else{
+        enet_peer_reset(client);
+        {
+            std::lock_guard<std::mutex> guard(consoleMutex);
+            printf("Failed to connect to Client\n\tIP: %s\n\tPort: %s\n", clientIP.c_str(), to_string(port).c_str());
+        }
+        return nullptr;
     }
 }
 

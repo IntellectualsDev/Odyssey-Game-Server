@@ -431,8 +431,8 @@ void FPS_Game::calculateDeltas() {
 }
 
 void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
-                                     flatbuffers::Offset<flatbuffers::String> sourcePoint,
-                                     flatbuffers::Offset<flatbuffers::String> destPoint, bool reliable,
+                                     flatbuffers::Offset<SourcePoint> sourcePoint,
+                                     flatbuffers::Offset<DestPoint> destPoint, int clientID, bool reliable,
                                      int serverTick, float serverDT, int lobbyNumber,
                                      PacketType packetType, bool delta) {
     auto& map = delta ? deltaStates : playerStates;
@@ -535,20 +535,22 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
         playerStatesOffsets.push_back(statesOffset);
     }
 
-    flatbuffers::Offset<DestPoint> dest = CreateDestPoint(builder, destPoint, -99);
-    flatbuffers::Offset<SourcePoint> source = CreateSourcePoint(builder, sourcePoint, -99);
     flatbuffers::Offset<Tick> tick = CreateTick(builder, serverTick, serverDT);
     auto playerStatesVector = builder.CreateVector(playerStatesOffsets);
     auto payload = CreatePayload(builder, PayloadTypes_AllPlayerStates, playerStatesVector.Union());
 
     OD_PacketBuilder packetBuilder(builder);
     packetBuilder.add_packet_type(packetType);
-    packetBuilder.add_dest_point(dest);
-    packetBuilder.add_source_point(source);
+    packetBuilder.add_dest_point(destPoint);
+    packetBuilder.add_dest_client_id(clientID);
+    packetBuilder.add_source_point(sourcePoint);
     packetBuilder.add_lobby_number(lobbyNumber);
     packetBuilder.add_reliable(reliable);
     packetBuilder.add_tick(tick);
     packetBuilder.add_payload(payload);
+
+    auto packet = packetBuilder.Finish();
+    builder.Finish(packet);
 }
 
 
