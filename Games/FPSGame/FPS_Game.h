@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 
 
@@ -16,6 +17,7 @@ class FPS_Game {
 public:
     FPS_Game();
     size_t createNewPlayer(Vector3 initPosition, Vector3 initVelocity, float dt);
+    void mapDesyncClientandServerTicks(size_t playerIndex, int serverTick, int clientTick);
     void updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate);
     void updateEntities();
     void checkEntityCollisions();
@@ -27,11 +29,18 @@ public:
                                bool reliable,
                                int serverTick,
                                float serverDT,
+                               int wrapAround,
                                int lobbyNumber,
                                PacketType packetType,
                                bool delta);
+    std::vector<const Input*> parseInputPackets(int playerIndex, const flatbuffers::Vector<flatbuffers::Offset<Input>> * clientInputs);
+
+
 //    void updatePreviousStates();
     void endGame(); // TODO: later
+
+    FPSClientState* getMostPlayerMostCurrentState(int clientID)
+
     unique_ptr<FPSClientState> getPlayerCurrentState(size_t index);
     unique_ptr<FPSClientState> getPlayerPreviousState(size_t index);
     unique_ptr<FPSClientState> getPlayerCumulativeState(size_t index);
@@ -77,7 +86,7 @@ private:
     static constexpr const float wallHeight = 5.0f;
     static constexpr const float wallLength = 32.0f;
     static constexpr const float floorLength = 50.0f;
-    static constexpr const size_t MAX_HISTORY_PACKETS = 50;
+    static constexpr const size_t MAX_HISTORY_PACKETS = 50; // MAX_HISTORY_PACKETS should always be less than the size of the server tick wrap-around range
 
     static int playerIDCount;
 //    static std::vector<FPSClientState> buffer;
@@ -86,6 +95,9 @@ private:
 
     map<int, LIFOCircularBuffer<unique_ptr<FPSClientState>>> playerStates;
     map<int, LIFOCircularBuffer<unique_ptr<FPSClientState>>> deltaStates;
+
+    unordered_map<int, unordered_map<int, int>> serverToClientTick;
+    unordered_map<int, unordered_map<int, int>> clientToServerTick;
 //    FPSClientState currentStates;
 //    vector<unique_ptr<FPSClientState>> previousStatesOfPlayers;
 //    vector<unique_ptr<FPSClientState>> currentStatesOfPlayers;

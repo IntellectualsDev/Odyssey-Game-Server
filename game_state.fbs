@@ -51,6 +51,7 @@ table DestPoint {
 table Tick{
     tick_number: uint;
     dt: float;
+    wrap_around: int;
 }
 
 table OD_Camera3D {
@@ -76,6 +77,7 @@ table Entity {
 table Client {
     source_point: SourcePoint;
     tick: Tick; // client never sends me their tick
+    rtt: float; // should be set only for the snapshot
     client_uid: uint;
     alive: bool;
     sprint: bool;
@@ -91,6 +93,7 @@ table Client {
 
 table Input {
     client_uid: uint;
+    tick: Tick;
     w: bool;
     a: bool;
     s: bool;
@@ -98,7 +101,7 @@ table Input {
     mouse_delta: OD_Vector2;
     shoot: bool;
     space: bool;
-    dt: float;
+    //dt: float;
     previous_position: OD_Vector3;
     sprint: bool;
     crouch: bool;
@@ -110,6 +113,7 @@ table ClientInputs {
 }
 
 table ClientStates {
+    rtt: float; // should be set only for the deltas
     client_states:[Client];
 }
 
@@ -123,13 +127,20 @@ table States {
     state: StatesOptions;
 }
 
-table AllPlayerStates {
+table AllPlayerDeltas {
+    payload:[States];
+}
+
+table AllPlayerSnapshots {
     payload:[States];
 }
 
 union PayloadTypes{
     Input,
-    AllPlayerStates
+    AllPlayerDeltas,
+    AllPlayerSnapshots,
+    ClientStates,
+    ClientInputs
 }
 
 table Payload{
@@ -138,7 +149,7 @@ table Payload{
 
 table OD_Packet {
     packet_type: PacketType;
-    dest_client_id: int;
+    client_id: int;
     dest_point: DestPoint;
     source_point: SourcePoint;
     lobby_number :uint;

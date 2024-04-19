@@ -14,10 +14,10 @@
 #include <condition_variable>
 
 // Acts as the communication label for a client
-struct IPEndpoint {
-    enet_uint32 host;
-    enet_uint16 port;
-};
+//struct IPEndpoint {
+//    enet_uint32 host;
+//    enet_uint16 port;
+//};
 
 
 using namespace std;
@@ -34,19 +34,20 @@ public:
 private:
     void run();
     void processPacket(unique_ptr<BufferHandler> packet);
+    void packetPreprocessing(BufferHandler& packet);
     void update(unique_ptr<BufferHandler> packet);
     void render();
     void sendDifferentials();
     void sendSnapShot();
 
-    void buildStateFlatBuffer(vector<unique_ptr<FPSClientState>>& states,
-                         flatbuffers::Offset<flatbuffers::String> sourcePoint,
-                         flatbuffers::Offset<flatbuffers::String> destPoint,
-                         bool reliable,
-                         PacketType packeType,
-                         PacketPayload payload,
-                         bool delta
-                         );
+//    void buildStateFlatBuffer(vector<unique_ptr<FPSClientState>>& states,
+//                         flatbuffers::Offset<flatbuffers::String> sourcePoint,
+//                         flatbuffers::Offset<flatbuffers::String> destPoint,
+//                         bool reliable,
+//                         PacketType packeType,
+//                         PacketPayload payload,
+//                         bool delta
+//                         );
 
     void buildGenericFlatBuffer();
 
@@ -64,6 +65,7 @@ private:
 
     uint32_t tickNumber = 0;
     const int ticksTillGlobalState = 20;
+    const int wrapAround = 60;
 //    const float tickRate = 60.0f;
     std::chrono::steady_clock::time_point lastTick;
 

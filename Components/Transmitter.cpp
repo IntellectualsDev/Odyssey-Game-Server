@@ -76,16 +76,19 @@ void Transmitter::transmitPacket(unique_ptr<BufferHandler> packet){
 
     ENetPacket* packetToSend = enet_packet_create(packet->getByteView(), packet->getSize(), flags);
     int clientID = OD_Packet->dest_client_id();
-    if(!connectionManager->isPlayerConnected(clientID)){
-        ENetPeer * client = connect(OD_Packet->dest_point()->address()->str(), OD_Packet->dest_point()->port());
-        if(client != nullptr){
+    ENetPeer * client;
+    if(!connectionManager->isPlayerConnected(clientID)) {
+        client = connect(OD_Packet->dest_point()->address()->str(), OD_Packet->dest_point()->port());
+        if (client != nullptr) {
             connectionManager->setPeer(clientID, client);
-        }
-        else{
-            fprintf(stderr, "Transmit Error: Unable to connect to client ID#%d %s:%d, ENetPeer* is nullptr\n", clientID, OD_Packet->dest_point()->address()->str().c_str(), OD_Packet->dest_point()->port());
+        } else {
+            fprintf(stderr, "Transmit Error: Unable to connect to client ID#%d %s:%d, ENetPeer* is nullptr\n", clientID,
+                    OD_Packet->dest_point()->address()->str().c_str(), OD_Packet->dest_point()->port());
             return;
         }
-
+    }
+    else{
+        client = connectionManager->getPeer(clientID);
         enet_host_service(server, & event, 0);
         enet_uint32 flags = 0;
         if(OD_Packet->reliable()){

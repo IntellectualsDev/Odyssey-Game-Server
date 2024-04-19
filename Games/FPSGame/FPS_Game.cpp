@@ -132,12 +132,9 @@ FPS_Game::FPS_Game(): playerStates(), deltaStates() {}
 size_t FPS_Game::createNewPlayer(Vector3 initPosition, Vector3 initVelocity, float dt) {
     //Build my EN
     FPSClientState initState;
-//    FPSClientState currentState;
-//    FPSClientState cumulativeState;
 
     initState.position = initPosition;
     initState.velocity = initVelocity;
-//    previousState.hitBox = initHitBox;
     initState.playerBox = (BoundingBox){(Vector3){initState.position.x - FPS_Player::hitbox.x/2,
                                                   initState.position.y - FPS_Player::hitbox.y/2,
                                                   initState.position.z - FPS_Player::hitbox.z/2},
@@ -184,24 +181,32 @@ size_t FPS_Game::createNewPlayer(Vector3 initPosition, Vector3 initVelocity, flo
         playerIDCount += 1;
     }
 
-//
-//    for (int i = 0; i < previousStatesOfPlayers.size(); i++) {
-//        if (previousStatesOfPlayers[i] == nullptr){
-//            slotFound = true;
-//            previousStatesOfPlayers[i] = make_unique<FPSClientState>(previousState);
-//            currentStatesOfPlayers[i] = make_unique<FPSClientState>(currentState);
-//            cumulativeDeltaStatesPlayers[i] = make_unique<FPSClientState>(cumulativeState);
-//            index = i;
-//            break;
-//        }
-//    }
-//    if(!slotFound){
-//        previousStatesOfPlayers.push_back(make_unique<FPSClientState>(previousState));
-//        currentStatesOfPlayers.push_back(make_unique<FPSClientState>(currentState));
-//        cumulativeDeltaStatesPlayers.push_back(make_unique<FPSClientState>(cumulativeState));
-//        index = previousStatesOfPlayers.size() - 1;
-//    }
     return id;
+}
+
+/*
+ * Handles Desynchronized Server and Client tick rates by updating a mapping of Client to Server Ticks. It is resilient to variable/oscillating Client tick rates, and
+ * can handle both server and client tick wraparounds, as long as the Server tick rate > client tick rate
+ */
+void FPS_Game::mapDesyncClientandServerTicks(size_t playerIndex, int serverTick, int clientTick) {
+    auto iterClientToServer = clientToServerTick.find(playerIndex);
+    auto iterServerToClient = serverToClientTick.find(playerIndex);
+
+    if(iterClientToServer == clientToServerTick.end()){
+        fprintf(stderr, "Error: Async Client to Server Tick Map for Client %d is empty or does not exist.\n\tFPS_Game.cpp ~ mapAsyncClientandServerTicks()", playerIndex);
+        return;
+    }
+    if (iterServerToClient == serverToClientTick.end()){
+        fprintf(stderr, "Error: Async Server to Client Tick Map for Client %d is empty or does not exist.\n\tFPS_Game.cpp ~ mapAsyncClientandServerTicks()", playerIndex);
+        return;
+    }
+
+    if(iterClientToServer != clientToServerTick.end()){
+        iterClientToServer->second[clientTick] = serverTick;
+    }
+    if(iterServerToClient != serverToClientTick.end()){
+        iterServerToClient->second[serverTick] = clientTick;
+    }
 }
 
 void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate) {
@@ -366,6 +371,7 @@ void FPS_Game::checkEntityCollisions() {
 }
 
 // the newly populated deltas CircularBuffer is added to from least recent to most recent (with peak returning the most recent)
+// TODO: calculatedDelta should only calculate between the playerState's head and head offset 1
 void FPS_Game::calculateDeltas() {
 
     FPSClientState delta = FPSClientState();
@@ -373,59 +379,57 @@ void FPS_Game::calculateDeltas() {
         size_t playerIndex = playerPair.first;
         auto& deltas = deltaStates.at(playerIndex);
         auto& states = playerPair.second;
-
         if(states.getCount() >= 2){
-            for(int i = states.getCount() - 2; i >= 0; --i){
-                auto& newerState  = states.peekAtIndex(i);
-                auto& olderState = states.peekAtIndex(i+1);
-                // i is the newer, and i+1 is older ( (i) - (i+1) )
-                delta.separationVector = Vector3Subtract(newerState->separationVector, olderState->separationVector);
-                delta.topCollision = newerState->topCollision;
-                delta.grounded = newerState->grounded;
-                delta.space = newerState->space;
-                delta.playerBox = {Vector3Subtract(newerState->playerBox.min, olderState->playerBox.min),
-                                   Vector3Subtract(newerState->playerBox.max, olderState->playerBox.max)};
-                delta.coolDown = newerState->coolDown - olderState->coolDown;
-                delta.camera = {Vector3Subtract(newerState->camera.position, olderState->camera.position),
-                                Vector3Subtract(newerState->camera.target, olderState->camera.target),
-                                Vector3Subtract(newerState->camera.up, olderState->camera.up),
-                                newerState->camera.fovy - olderState->camera.fovy,
-                                newerState->camera.projection - olderState->camera.projection};
-                delta.position = Vector3Subtract(newerState->position, olderState->position);
-                delta.velocity = Vector3Subtract(newerState->velocity, olderState->velocity);
-                delta.alive = newerState->alive;
+            auto& newerState = states.peekAtIndex(0);
+            auto& olderState = states.peekAtIndex(1);
 
-                 //TODO:  Create a weighted dt
-                 delta.dt = newerState->dt - olderState->dt;
+            // do all of the delta calculations for all entities client state
+            delta.separationVector = Vector3Subtract(newerState->separationVector, olderState->separationVector);
+            delta.topCollision = newerState->topCollision;
+            delta.grounded = newerState->grounded;
+            delta.space = newerState->space;
+            delta.playerBox = {Vector3Subtract(newerState->playerBox.min, olderState->playerBox.min),
+                               Vector3Subtract(newerState->playerBox.max, olderState->playerBox.max)};
+            delta.coolDown = newerState->coolDown - olderState->coolDown;
+            delta.camera = {Vector3Subtract(newerState->camera.position, olderState->camera.position),
+                            Vector3Subtract(newerState->camera.target, olderState->camera.target),
+                            Vector3Subtract(newerState->camera.up, olderState->camera.up),
+                            newerState->camera.fovy - olderState->camera.fovy,
+                            newerState->camera.projection - olderState->camera.projection};
+            delta.position = Vector3Subtract(newerState->position, olderState->position);
+            delta.velocity = Vector3Subtract(newerState->velocity, olderState->velocity);
+            delta.alive = newerState->alive;
 
-                 //iterate through the entities
-                 for(int j = 0; j < newerState->entities.size(); j++){
-                    auto& newerEntity = newerState->entities[j];
+             //TODO:  Create a weighted dt
+             delta.dt = newerState->dt - olderState->dt;
 
-                     // edge cases: (1) if a new entity was created between states, newerState's entities size > olderState's entities size
-                     //             (2) if an entity was deleted between state's newEntity will have claimed field set to false
-                     // Simply add the newerEntity (if new at that position a skeleton exists) if deleted it will be skeleton with claimed set to false
-                     if(j >= olderState->entities.size() || !newerEntity.claimed){
-                         delta.entities.push_back(std::move(newerEntity));
-                     }
-                     else{
-                         auto& olderEntity = olderState->entities[j];
-                         FPSEntityState entityDelta;
-                         entityDelta.position = Vector3Subtract(newerEntity.position, olderEntity.position);
-                         entityDelta.bulletBox = {Vector3Subtract(newerEntity.bulletBox.min, olderEntity.bulletBox.min),
-                                                  Vector3Subtract(newerEntity.bulletBox.max, olderEntity.bulletBox.max)};
-                         entityDelta.velocity = Vector3Subtract(newerEntity.velocity, olderEntity.velocity);
-                         entityDelta.alive = newerEntity.alive;
-                         entityDelta.claimed = newerEntity.claimed;
-                         delta.entities.push_back(std::move(entityDelta));
-                     }
+            //iterate through the entities
+             for(int j = 0; j < newerState->entities.size(); j++){
+                auto& newerEntity = newerState->entities[j];
+
+                 // edge cases: (1) if a new entity was created between states, newerState's entities size > olderState's entities size
+                 //             (2) if an entity was deleted between state's newEntity will have claimed field set to false
+                 // Simply add the newerEntity (if new at that position a skeleton exists) if deleted it will be skeleton with claimed set to false
+                 if(j >= olderState->entities.size() || !newerEntity.claimed){
+                     delta.entities.push_back(std::move(newerEntity));
                  }
+                 else{
+                     auto& olderEntity = olderState->entities[j];
+                     FPSEntityState entityDelta;
+                     entityDelta.position = Vector3Subtract(newerEntity.position, olderEntity.position);
+                     entityDelta.bulletBox = {Vector3Subtract(newerEntity.bulletBox.min, olderEntity.bulletBox.min),
+                                              Vector3Subtract(newerEntity.bulletBox.max, olderEntity.bulletBox.max)};
+                     entityDelta.velocity = Vector3Subtract(newerEntity.velocity, olderEntity.velocity);
+                     entityDelta.alive = newerEntity.alive;
+                     entityDelta.claimed = newerEntity.claimed;
+                     delta.entities.push_back(std::move(entityDelta));
+                 }
+             }
 
-                 // fully calculated the delta for a client, now appended from oldest -> newest to the player's delta CircularBuffer
-                 deltas.push(std::make_unique<FPSClientState>(std::move(delta)));
-                 delta = FPSClientState(); // reset to skeleton for the next set of newer and older states
-            }
-
+            // append to this delta to the deltas circular buffer
+            // fully calculated the delta for a client, now appended from oldest -> newest to the player's delta CircularBuffer
+             deltas.push(std::make_unique<FPSClientState>(std::move(delta)));
+             delta = FPSClientState(); // reset to skeleton for the next set of newer and older states
         }
     }
 }
@@ -433,7 +437,7 @@ void FPS_Game::calculateDeltas() {
 void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
                                      flatbuffers::Offset<SourcePoint> sourcePoint,
                                      flatbuffers::Offset<DestPoint> destPoint, int clientID, bool reliable,
-                                     int serverTick, float serverDT, int lobbyNumber,
+                                     int serverTick, float serverDT, int wrapAround, int lobbyNumber,
                                      PacketType packetType, bool delta) {
     auto& map = delta ? deltaStates : playerStates;
     std::vector<flatbuffers::Offset<States>> playerStatesOffsets;
@@ -472,7 +476,7 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
             auto entitiesVector = builder.CreateVector(entityOffsets);
 
             //TODO: take the client tick, normalize to server tick and store in FPSClientState on Client input (UpdatePlayer)
-            flatbuffers::Offset<Tick> clientTick = CreateTick(builder, state->tick, state->dt);
+            flatbuffers::Offset<Tick> clientTick = CreateTick(builder, state->tick, state->dt, wrapAround);
 
             flatbuffers::Offset<OD_Vector3> cameraPosition = CreateOD_Vector3(builder, state->camera.position.x,state->camera.position.y, state->camera.position.z);
             if(vector3IsZero(state->camera.position) and delta){
@@ -508,9 +512,12 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
                 velocity = 0;
             }
 
+            float snapshotRTT = delta ? NULL : 0;
+
             auto client = CreateClient(builder,
                                        NULL,
                                        clientTick,
+                                       snapshotRTT,
                                        i,
                                        state->alive,
                                        state->sprint,
@@ -529,7 +536,8 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
         //  specifically, building the "Differentials" or the "Snapshot" table
         auto clientStatesVector = builder.CreateVector(clientOffsets);
 
-        auto clientStatesOffset = CreateClientStates(builder, clientStatesVector);
+        float deltaRTT = delta ? 0 : NULL;
+        auto clientStatesOffset = CreateClientStates(builder, deltaRTT, clientStatesVector);
 
         auto statesOffset = CreateStates(builder, StatesOptions_ClientStates, clientStatesOffset.Union());
         playerStatesOffsets.push_back(statesOffset);
@@ -537,12 +545,15 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
 
     flatbuffers::Offset<Tick> tick = CreateTick(builder, serverTick, serverDT);
     auto playerStatesVector = builder.CreateVector(playerStatesOffsets);
-    auto payload = CreatePayload(builder, PayloadTypes_AllPlayerStates, playerStatesVector.Union());
+
+    auto payload = delta ?
+                                CreatePayload(builder, PayloadTypes_AllPlayerDeltas, playerStatesVector.Union())
+                                : CreatePayload(builder, PayloadTypes_AllPlayerSnapshots, playerStatesVector.Union());
 
     OD_PacketBuilder packetBuilder(builder);
     packetBuilder.add_packet_type(packetType);
     packetBuilder.add_dest_point(destPoint);
-    packetBuilder.add_dest_client_id(clientID);
+    packetBuilder.add_client_id(clientID);
     packetBuilder.add_source_point(sourcePoint);
     packetBuilder.add_lobby_number(lobbyNumber);
     packetBuilder.add_reliable(reliable);
@@ -551,6 +562,42 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
 
     auto packet = packetBuilder.Finish();
     builder.Finish(packet);
+}
+
+std::vector<const Input*> FPS_Game::parseInputPackets(int playerIndex, const flatbuffers::Vector<flatbuffers::Offset<Input>> * clientInputs) {
+    std::vector<const Input*> inputsToProcess;
+    auto iter = playerStates.find(playerIndex);
+
+    if(iter == playerStates.end() || iter->second.isEmpty()){
+        fprintf(stderr, "Error: retrieving most Current State for player ID # %d. playerID not found in playerStates map || Client State's map is empty.\n\tFPS_Game.cpp ~ getMostPlayerMostCurrentState()", playerIndex);
+        return inputsToProcess; // Return empty vector in case of error
+    }
+
+    int mostRecentServerTick = iter->second.peek()->tick;
+
+    // map most recent server tick to client tick
+    int mostRecentClientTick = serverToClientTick[playerIndex][mostRecentServerTick];
+    int clientInputHeadTick = clientInputs->Get(0)->tick()->tick_number();
+
+    // If the head of inputs is consecutive with the last verified tick, we're synchronized
+    // IF the head is less than or equal to the last verified tick, then there was out-of-order delivery. So ignore, and head will be ignored in update
+    if(clientInputHeadTick ==  mostRecentClientTick + 1 || clientInputHeadTick <= mostRecentClientTick) {
+        return inputsToProcess;
+    }
+    else if(clientInputHeadTick > mostRecentClientTick + 1 ){ // packet loss has occured, and intermediate packets must be pulled from the buffer
+        for(auto inputPacket: *clientInputs){
+            int tickNum = inputPacket->tick()->tick_number();
+            if(tickNum <= mostRecentClientTick + 1){
+                cout << "Packet loss w/ Client #" << playerIndex << " has occured. Inputs of ticks [" << tickNum << "," << clientInputHeadTick <<  "] pulled from Input history.";
+                break;
+            }
+            // add this packet to our list to process
+            inputsToProcess.push_back(inputPacket);
+        }
+        // Reverse the vector to get oldest -> newest input
+        std::reverse(inputsToProcess.begin(), inputsToProcess.end());
+    }
+    return inputsToProcess;
 }
 
 
