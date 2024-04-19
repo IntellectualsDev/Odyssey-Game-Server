@@ -212,6 +212,10 @@ void FPS_Game::mapDesyncClientandServerTicks(size_t playerIndex, int serverTick,
 void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate) {
     cout << "Entered FPS_Game::updatePlayer method " << endl;
 
+    //TODO: move the head - 1 state to the head, and then during the batch iteration use "previousStateRef = iter->second.peek();" in the FPS_Player previousStateRef parameter, but after
+    // FPS_Player::UpdatePlayer() check player v player collisions and MOST IMPORTANTLY instead of pushing new state use rewriteAtIndex() to rewrite. Allowing inputs in batch to build upon
+    // each other (packet-loss batch processing)
+
     FPSClientState currentState;
     auto iter = playerStates.find(playerIndex);
     if(iter != playerStates.end()){
@@ -252,6 +256,8 @@ void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,V
         cout << "After collision player with other player collision checks" << endl;
 
         printFPSClientState(currentState);
+
+        // TODO: replace with CircularBuffer's rewriteAtIndex() method to change current Server tick's state (packet-loss batch processing)
         iter->second.push(std::make_unique<FPSClientState>(std::move(currentState))); // add the new currentState to the Circular Buffer, making it most current state
     }
 
@@ -306,6 +312,7 @@ void FPS_Game::updateEntities(){
 //    return;
 }
 
+// TODO: convert to checkEntityTerrainCollisions()
 void FPS_Game::checkEntityCollisions() {
     // Check for collisions between terrain and the entities of every single entity.
     // Entities marked as .alive = false, will be
@@ -370,8 +377,44 @@ void FPS_Game::checkEntityCollisions() {
 //    }
 }
 
+// TODO: Call with each server tick, post-creation of Entity raycasting (packet-loss batch processing)
+void FPS_Game::checkEntityTerrainCollisions() {
+    for(const auto & terrain : FPS_Game::terrainVector){
+        for(auto& playerPair: playerStates){
+            auto& playerState = playerPair.second.peek();
+            for(auto& entity : playerState->entities) {
+                if(CheckCollisionBoxes(entity.bulletBox, terrain) && entity.claimed && entity.alive){
+                    cout << "Bullet Hit terrain: " << entity.position.x << ", " << entity.position.y << ", " << entity.position.z << endl;
+                    entity.alive = false;
+                }
+            }
+        }
+    }
+}
+
+// TODO: Called with each call of UpdatePlayer, between each input of a batch (packet-loss batch processing)
+void FPS_Game::checkEntityPlayerCollisions() {
+    for(auto& playerPair: playerStates){
+        auto& shooterState = playerPair.second.peek();
+        for(auto& entity: shooterState->entities){
+            for(auto& otherPlayerPair : playerStates) {
+                if (playerPair.first == otherPlayerPair.first) {
+                    continue;
+                }
+
+                auto &targetState = otherPlayerPair.second.peek();
+                if (CheckCollisionBoxes(entity.bulletBox, targetState->playerBox)) {
+                    entity.alive = false;
+                    targetState->alive = false;
+                    cout << "Client killed at loc: " << targetState->position.x << ", " << targetState->position.y
+                         << ", " << targetState->position.z << ", " << endl;
+                }
+            }
+        }
+    }
+}
+
 // the newly populated deltas CircularBuffer is added to from least recent to most recent (with peak returning the most recent)
-// TODO: calculatedDelta should only calculate between the playerState's head and head offset 1
 void FPS_Game::calculateDeltas() {
 
     FPSClientState delta = FPSClientState();

@@ -21,6 +21,8 @@ public:
     void updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate);
     void updateEntities();
     void checkEntityCollisions();
+    void checkEntityTerrainCollisions();
+    void checkEntityPlayerCollisions();
     void calculateDeltas();
     void buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
                                flatbuffers::Offset<SourcePoint> sourcePoint,

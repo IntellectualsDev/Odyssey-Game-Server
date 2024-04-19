@@ -31,6 +31,12 @@ public:
         if (count < size) ++count;
     }
 
+     void rewriteAtIndex(int i, T &&value){
+        if(isEmpty()) throw std::runtime_error("Buffer is empty");
+        int rewriteIndex = (head - 1 - i + size) & size;
+        buffer[rewriteIndex] = value;
+    }
+
     T pop() {
         if (isEmpty()) throw std::runtime_error("Buffer is empty");
         head = (head - 1 + size) % size;
