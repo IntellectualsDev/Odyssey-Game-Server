@@ -137,28 +137,34 @@ void GameLobby::update(unique_ptr<BufferHandler> packet) {
         cout << "\tPrevious State: (" << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->x() << ", " << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->y() << ", " << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->z() << ")\n" << endl;
     }
 
-    // Pre-process for packet loss, and simulate past missed inputs
+    // Pre-process for packet loss/re-ordered packets, and generate packets that must be simulated and simulate current and any past missed inputs
+    vector<const Input *>  toProcess = game.parseInputPackets(packet->getPacketView()->client_id(),
+                                            packet->getPacketView()->payload()->payload_as_ClientInputs()->client_inputs());
 
-    // pull the most recent client state and the Client tick  from Client(i) Circular Buffer
-//    int clientID = packet.getPacketView()->client_id();
-        game.parseInputPackets(packet->getPacketView()->client_id(), packet->getPacketView()->payload()->payload_as_ClientInputs()->client_inputs());
-        auto hello = packet->getPacketView()->payload()->payload_as_ClientInputs()->client_inputs();
+    game.mapDesyncClientandServerTicks(packet.getPacketView()->client_id(),
+                                       tickNumber,
+                                       packet.getPacketView()->tick()->tick_number());
 
+    for(const Input * input : toProcess){
+        game.updatePlayer(input->client_uid(),
+                          input->w(),
+                          input->a(),
+                          input->s(),
+                          input->d(),
+                          (Vector2){input->mouse_delta()->x(), input->mouse_delta()->y()},
+                          input->shoot(),
+                          input->space(),
+                          input->tick()->dt(),
+                          input->sprint(),
+                          false,
+                          GameLobby::tickRate);
 
+        game.updateEntities();
+        game.checkEntityCollisions();
+        game.calculateDeltas();
+    }
 
-    // Find the corresponding Client tick from the current Server tick
-
-            // Check if the most recent input in input list (head) is consecutive with the most recent Client State
-
-            // If consecutive process this most recent input packet as normal
-
-            // IF NOT consecutive add all packets from [head, head offset by (input tick  - most recent state + 1) to be processed
-
-            // map the new packet to the
-            game.mapDesyncClientandServerTicks(packet.getPacketView()->client_id(),
-                                               tickNumber,
-                                               packet.getPacketView()->tick()->tick_number());
-
+    // 1. Pre-process packets for packet loss/re-ordered packets & generate list of inputs to be simulated
     // 1. mapAsyncClientTick { client(i) -> server  & server -> client(i) }
     // 2. updatePlayer
     // 3. updateEntities

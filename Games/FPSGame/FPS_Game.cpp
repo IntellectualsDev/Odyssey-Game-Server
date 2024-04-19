@@ -579,9 +579,13 @@ std::vector<const Input*> FPS_Game::parseInputPackets(int playerIndex, const fla
     int mostRecentClientTick = serverToClientTick[playerIndex][mostRecentServerTick];
     int clientInputHeadTick = clientInputs->Get(0)->tick()->tick_number();
 
-    // If the head of inputs is consecutive with the last verified tick, we're synchronized
-    // IF the head is less than or equal to the last verified tick, then there was out-of-order delivery. So ignore, and head will be ignored in update
-    if(clientInputHeadTick ==  mostRecentClientTick + 1 || clientInputHeadTick <= mostRecentClientTick) {
+    // If the head is less than the last verified tick, then there was out-of-order delivery. So ignore, and head will be ignored in update
+    if(clientInputHeadTick <= mostRecentClientTick){
+        return inputsToProcess;
+    }
+    // If the head of inputs is consecutive with the last verified tick, we're synchronized. So send consecutive tick's packet to be processed
+    else if(clientInputHeadTick == mostRecentClientTick + 1) {
+        inputsToProcess.push_back(clientInputs->Get(0));
         return inputsToProcess;
     }
     else if(clientInputHeadTick > mostRecentClientTick + 1 ){ // packet loss has occured, and intermediate packets must be pulled from the buffer
