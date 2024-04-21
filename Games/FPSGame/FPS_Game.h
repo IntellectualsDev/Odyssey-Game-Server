@@ -18,7 +18,10 @@ public:
     FPS_Game();
     size_t createNewPlayer(Vector3 initPosition, Vector3 initVelocity, float dt);
     void mapDesyncClientandServerTicks(size_t playerIndex, int serverTick, int clientTick);
+
     void updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate);
+    void updatePlayer(int playerIndex, int serverTick, vector<const Input *> inputs, float serverTickRate)
+
     void updateEntities();
     void checkEntityCollisions();
     void checkEntityTerrainCollisions();

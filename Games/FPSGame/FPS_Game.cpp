@@ -200,12 +200,69 @@ void FPS_Game::mapDesyncClientandServerTicks(size_t playerIndex, int serverTick,
         fprintf(stderr, "Error: Async Server to Client Tick Map for Client %d is empty or does not exist.\n\tFPS_Game.cpp ~ mapAsyncClientandServerTicks()", playerIndex);
         return;
     }
+    // map client tick to server tick
+    iterClientToServer->second[clientTick] = serverTick;
+    // map server tick to client tick
+    iterServerToClient->second[serverTick] = clientTick;
+}
 
-    if(iterClientToServer != clientToServerTick.end()){
-        iterClientToServer->second[clientTick] = serverTick;
+void FPS_Game::updatePlayer(int playerIndex, int serverTick, vector<const Input *> inputs, float serverTickRate) {
+    FPSClientState currentState;
+    auto iter = playerStates.find(playerIndex);
+    if(iter == playerStates.end()){
+        fprintf(stderr, "Error: retrieving Circular State Buffer for player ID # %d. playerID not found in playerStates map.\n\tFPS_Game.cpp ~  updatePlayer(vector<const Input *>)", playerIndex);
     }
-    if(iterServerToClient != serverToClientTick.end()){
-        iterServerToClient->second[serverTick] = clientTick;
+
+    std::unique_ptr<FPSClientState>& mostRecentState = iter->second.peek();
+
+    // clone the most Recent State and undo the outer unique_ptr to create a mutable version of the most recent state
+    std::unique_ptr<FPSClientState> mostRecentStateClone = (*mostRecentState).clone();
+
+    if(mostRecentStateClone != nullptr){
+        FPSClientState mostRecentStateMutable = std::move(*(mostRecentStateClone));
+        // Simulate all the inputs within the to-be processed inputs vector and accumulate inputs
+        for(auto& input: inputs){
+            FPS_Player::UpdatePlayer(mostRecentStateMutable,
+                                     currentState,
+                                     input->w(),
+                                     input->a(),
+                                     input->s(),
+                                     input->d(),
+                                     (Vector2){input->mouse_delta()->x(), input->mouse_delta()->y()},
+                                     input->shoot(),
+                                     input->space(),
+                                     input->tick()->dt(),
+                                     FPS_Game::terrainVector,
+                                     FPS_Game::topBoxVector,
+                                     input->sprint(),
+                                     input->crouch(),
+                                     serverTickRate);
+
+            // update the mostRecentState and reset the currentState
+            mostRecentStateMutable = std::move(currentState);
+            currentState = FPSClientState();
+        }
+        // At the end of the loop the mostRecentStateMutable should hold the newest state
+
+        // Check for collisions between calling player and all other players. If collision generate seperation vector to push client back
+        for (const auto& playerPair: playerStates){
+            if(playerPair.first != playerIndex && !playerPair.second.isEmpty()){
+                const unique_ptr<FPSClientState>& otherPlayerState = playerPair.second.peek();
+
+                //TODO: ensure that checkCollision takes player's currentState.playerbox and not the previous State's playerBox;
+                if(FPS_Player::CheckCollision(mostRecentStateMutable.playerBox, otherPlayerState->playerBox, mostRecentStateMutable.separationVector)){
+                    // collision detected between calling Player and otherPlayer
+                    fprintf(stdout, "Player v Player {%d,%d} collision detected.\n\t in FPS_Gane.cpp ~ updatePlayer(vector<inputs>)", playerIndex, playerPair.first);
+                    mostRecentStateMutable.position = Vector3Add(mostRecentStateMutable.position, mostRecentStateMutable.separationVector);
+                    mostRecentStateMutable.camera.position = mostRecentStateMutable.position;
+                    mostRecentStateMutable.camera.target = Vector3Add(mostRecentStateMutable.camera.target, mostRecentStateMutable.separationVector);
+                }
+            }
+        }
+
+        printFPSClientState(mostRecentStateMutable);
+        mostRecentStateMutable.tick = serverTick; // assign the current server tick to this new state
+        iter->second.push(std::make_unique<FPSClientState>(std::move(mostRecentStateMutable)));
     }
 }
 

@@ -53,18 +53,17 @@ struct FPSEntityState {
         return *this;
     }
 
-//    // Method to clone the object
-//    FPSEntityState clone() const {
-//        FPSEntityState cloned;
-//        cloned.bulletModel = this->bulletModel; // Assuming Model supports move semantics
-//        cloned.alive = this->alive;
-//        cloned.claimed = this->claimed;
-//        cloned.position = this->position;
-//        cloned.velocity = this->velocity;
-//        cloned.hitbox = this->hitbox;
-//
-//        return cloned;
-//    }
+    // Method to clone the object
+    FPSEntityState clone() const {
+        FPSEntityState cloned;
+        cloned.bulletModel = this->bulletModel; // Assuming Model supports move semantics
+        cloned.alive = this->alive;
+        cloned.claimed = this->claimed;
+        cloned.position = this->position;
+        cloned.velocity = this->velocity;
+        cloned.hitbox = this->hitbox;
+        return cloned;
+    }
 };
 
 struct FPSClientState {
@@ -133,6 +132,33 @@ struct FPSClientState {
             // Optionally clear or reset the state of `other` if needed
         }
         return *this;
+    }
+
+    std::unique_ptr<FPSClientState> clone() const {
+        auto cloned = std::make_unique<FPSClientState>();
+        cloned->dt = this->dt;
+        cloned->tick = this->tick;
+        cloned->separationVector = this->separationVector; // Assuming this can be copied
+        cloned->topCollision = this->topCollision;
+        cloned->grounded = this->grounded;
+        cloned->space = this->space;
+        cloned->sprint = this->sprint;
+        cloned->playerBox = this->playerBox;  // Assuming BoundingBox can be copied
+        cloned->coolDown = this->coolDown;
+        cloned->camera = this->camera;  // Assuming Camera3D can be copied
+        cloned->position = this->position;
+        cloned->velocity = this->velocity;
+        cloned->alive = this->alive;
+        cloned->cameraMode = this->cameraMode;
+
+        // Deep copy of complex members like vectors and sets
+        cloned->entities.reserve(this->entities.size());
+        for (const auto& entity : this->entities) {
+            cloned->entities.push_back(entity.clone());  // Assuming FPSEntityState has a clone method
+        }
+        cloned->freeEntities = this->freeEntities;
+
+        return cloned;
     }
 
 //    // Method to clone the object

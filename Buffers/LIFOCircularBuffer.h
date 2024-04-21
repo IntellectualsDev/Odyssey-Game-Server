@@ -58,6 +58,19 @@ public:
         return buffer[peekIndex];
     }
 
+    T peekCopy() const {
+        if (isEmpty()) throw std::runtime_error("Buffer is empty");
+        auto peekIndex = (head - 1 + size) % size;
+        return buffer[peekIndex].get();
+    }
+
+    T peekCopyAtIndex(int i) const {
+        if (isEmpty()) throw std::runtime_error("Buffer is empty");
+        auto peekIndex = (head - 1 - i + size) % size;
+        return buffer[peekIndex];
+    }
+
+
     size_t getCount() const {
         return count;
     }

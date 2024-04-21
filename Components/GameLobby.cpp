@@ -47,7 +47,6 @@ void GameLobby::stop() {
 }
 
 void GameLobby::run() {
-//    auto lastTick = std::chrono::steady_clock::now();
     const auto secondsPerTick = std::chrono::duration<float>(1.0f / tickRate);
 
     while(!stopFlag.load()){
@@ -61,6 +60,8 @@ void GameLobby::run() {
         auto currentTickPackets = receiveBuffer->popAllFromPartition(partitionIndex);
         cout << "# of pulled packets: " << currentTickPackets.size() << endl;
         if(!currentTickPackets.empty()){
+            // TODO:  generate raycasts of entities for use in checkEntityCollisions()
+
             for(int i = 0; i < currentTickPackets.size(); i++){
                 cout << "Before update method in game lobby.cpp" << endl;
 
@@ -78,6 +79,7 @@ void GameLobby::run() {
 //                sendDifferentials();
 //            }
         }
+        // TODO
 
         auto now = std::chrono::steady_clock::now();
         auto timeRemaining = nextTick - now;
@@ -137,60 +139,59 @@ void GameLobby::update(unique_ptr<BufferHandler> packet) {
         cout << "\tPrevious State: (" << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->x() << ", " << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->y() << ", " << packet->getPacketView()->payload()->payload_as_Input()->previous_position()->z() << ")\n" << endl;
     }
 
+    // Start of Server tick: draw Entity Raycasts (for use in Player v Entity Collisions)
+
+    // 1. Parse input  packets for packet loss/re-ordered packets & generate list of inputs to be simulated
+    // 1. mapAsyncClientTick { client(i) -> server  & server -> client(i) }
+    // 2. updatePlayer (if unacked inputs exist simulate all and mark with current server tick)
+    // 4. checkEntityCollisions() (check raycasts with each change in player states and apply lag compensation)
+    // 5. Calculate Deltas (generate deltas between added state and old state for clients who sent inputs)
+
+    // End of Server Tick: updateEntities (at the end of server tick move entities to end of raycast line)
+
     // Pre-process for packet loss/re-ordered packets, and generate packets that must be simulated and simulate current and any past missed inputs
     vector<const Input *>  toProcess = game.parseInputPackets(packet->getPacketView()->client_id(),
                                             packet->getPacketView()->payload()->payload_as_ClientInputs()->client_inputs());
 
-    game.mapDesyncClientandServerTicks(packet.getPacketView()->client_id(),
+    game.mapDesyncClientandServerTicks(packet->getPacketView()->client_id(),
                                        tickNumber,
-                                       packet.getPacketView()->tick()->tick_number());
+                                       packet->getPacketView()->tick()->tick_number());
 
-    for(const Input * input : toProcess){
-        game.updatePlayer(input->client_uid(),
-                          input->w(),
-                          input->a(),
-                          input->s(),
-                          input->d(),
-                          (Vector2){input->mouse_delta()->x(), input->mouse_delta()->y()},
-                          input->shoot(),
-                          input->space(),
-                          input->tick()->dt(),
-                          input->sprint(),
-                          false,
+    if(!toProcess.empty()){
+        game.updatePlayer(packet->getPacketView()->client_id(),
+                          tickNumber,
+                          toProcess,
                           GameLobby::tickRate);
-
-        game.updateEntities();
-        game.checkEntityCollisions();
-        game.calculateDeltas();
     }
 
-    // 1. Pre-process packets for packet loss/re-ordered packets & generate list of inputs to be simulated
-    // 1. mapAsyncClientTick { client(i) -> server  & server -> client(i) }
-    // 2. updatePlayer
-    // 3. updateEntities
-    // 4. checkEntityCollisions()
-    // 5. Optional: display Server GUI
-
-    game.updatePlayer(0,
-                      packet->getPacketView()->payload()->payload_as_Input()->w(),
-                      packet->getPacketView()->payload()->payload_as_Input()->a(),
-                      packet->getPacketView()->payload()->payload_as_Input()->s(),
-                      packet->getPacketView()->payload()->payload_as_Input()->d(),
-                      (Vector2){packet->getPacketView()->payload()->payload_as_Input()->mouse_delta()->x(), packet->getPacketView()->payload()->payload_as_Input()->mouse_delta()->y()},
-                      packet->getPacketView()->payload()->payload_as_Input()->shoot(),
-                      packet->getPacketView()->payload()->payload_as_Input()->space(),
-                      packet->getPacketView()->tick()->dt(),
-                      packet->getPacketView()->payload()->payload_as_Input()->sprint(),
-                      false,
-                      GameLobby::tickRate);
-
-    game.updateEntities();
-    game.checkEntityCollisions();
+    game.checkEntityCollisions(); // TODO: modify to pull other player position via lag compensation and enable collision detection via raycasts
     game.calculateDeltas();
 
-    // TODO: both of these lead to SIGSEGV faults
-
-    // TODO: double check: the difference between the current and previous states (Current - Previous)
+//________________________OLD IMPLEMENTATION---No multi-input simulation or history packet retreival______________________________________________
+//    // 1. Pre-process packets for packet loss/re-ordered packets & generate list of inputs to be simulated
+//    // 1. mapAsyncClientTick { client(i) -> server  & server -> client(i) }
+//    // 2. updatePlayer
+//    // 3. updateEntities
+//    // 4. checkEntityCollisions()
+//    // 5. Optional: display Server GUI
+//
+//    game.updatePlayer(0,
+//                      packet->getPacketView()->payload()->payload_as_Input()->w(),
+//                      packet->getPacketView()->payload()->payload_as_Input()->a(),
+//                      packet->getPacketView()->payload()->payload_as_Input()->s(),
+//                      packet->getPacketView()->payload()->payload_as_Input()->d(),
+//                      (Vector2){packet->getPacketView()->payload()->payload_as_Input()->mouse_delta()->x(), packet->getPacketView()->payload()->payload_as_Input()->mouse_delta()->y()},
+//                      packet->getPacketView()->payload()->payload_as_Input()->shoot(),
+//                      packet->getPacketView()->payload()->payload_as_Input()->space(),
+//                      packet->getPacketView()->tick()->dt(),
+//                      packet->getPacketView()->payload()->payload_as_Input()->sprint(),
+//                      false,
+//                      GameLobby::tickRate);
+//
+//    game.updateEntities();
+//    game.checkEntityCollisions();
+//    game.calculateDeltas();
+    //___________________________________________________________________________________________________________________________________________
 
     return;
 }
