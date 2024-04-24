@@ -9,7 +9,7 @@ using namespace std;
 PacketBuffer::PacketBuffer():
 shutdownFlag(false), numberOfPackets(0) {}
 
-void PacketBuffer::addPacket(unique_ptr<BufferHandler> packet) {
+void PacketBuffer::addPacket(unique_ptr<ENetPacket> packet) {
     {
         unique_lock<mutex> lock(bufferMutex);
 
@@ -21,7 +21,8 @@ void PacketBuffer::addPacket(unique_ptr<BufferHandler> packet) {
         packetQueue.push(std::move(packet));
         numberOfPackets++;
 
-        cout << "Packet received in Receive Buffer with Packet Type: " << packetQueue.front()->getPacketView()->packet_type() << endl;
+        const OD_Packet* od_Packet = flatbuffers::GetRoot<OD_Packet>(packetQueue.front().get());
+        cout << "Packet received in Receive Buffer with Packet Type: " << od_Packet->packet_type() << endl;
 //        printf("Packet received in Receive Buffer.\n\tlength = %zu\n\tdata = %s\n", packetQueue.front()->packet->ge->dataLength, packetQueue.front()->packet->data);
     }
 
@@ -34,7 +35,7 @@ void PacketBuffer::addPacket(unique_ptr<BufferHandler> packet) {
  * notified to wake up by cv.notify_one() or cv.notify_all() it will wake up and try to reacquire the lock (handled by the wait funciton)
  * , and once it reacquires the lock it will begin the service the request.
  */
-unique_ptr<BufferHandler> PacketBuffer::removePacket() {
+unique_ptr<ENetPacket> PacketBuffer::removePacket() {
     unique_lock<mutex> lock(bufferMutex); // lock the buffer
 
     // enter wait state and unlock lock until the packetQueue is notified, then check if it satisfies the lambda function if not

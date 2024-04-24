@@ -20,9 +20,9 @@ public:
     void mapDesyncClientandServerTicks(size_t playerIndex, int serverTick, int clientTick);
 
     void updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,Vector2 mouseDelta,bool shoot,bool space,float dt, bool sprint,bool crouch, float serverTickRate);
-    void updatePlayer(int playerIndex, int serverTick, vector<const Input *> inputs, float serverTickRate)
-
-    void updateEntities();
+    void updatePlayer(int playerIndex, int serverTick, vector<const Input *> inputs, float serverTickRate); // TODO: replace to take server dt as a parameter
+    void generateEntityRaycasts(int serverTickRate);
+    void updateEntities(int serverTickRate);
     void checkEntityCollisions();
     void checkEntityTerrainCollisions();
     void checkEntityPlayerCollisions();
@@ -44,7 +44,7 @@ public:
 //    void updatePreviousStates();
     void endGame(); // TODO: later
 
-    FPSClientState* getMostPlayerMostCurrentState(int clientID)
+    FPSClientState* getMostPlayerMostCurrentState(int clientID);
 
     unique_ptr<FPSClientState> getPlayerCurrentState(size_t index);
     unique_ptr<FPSClientState> getPlayerPreviousState(size_t index);
@@ -103,6 +103,8 @@ private:
 
     unordered_map<int, unordered_map<int, int>> serverToClientTick;
     unordered_map<int, unordered_map<int, int>> clientToServerTick;
+
+    unordered_map<int, unordered_map<int, int>> opponentBuffering;
 //    FPSClientState currentStates;
 //    vector<unique_ptr<FPSClientState>> previousStatesOfPlayers;
 //    vector<unique_ptr<FPSClientState>> currentStatesOfPlayers;

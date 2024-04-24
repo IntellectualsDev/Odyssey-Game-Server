@@ -15,19 +15,19 @@ void LobbyManagementService::freeReceiveBufferPartition(size_t index) {
     receiveBuffer.freePartition(index);
 }
 
-unique_ptr<BufferHandler> LobbyManagementService::popFromReceiveBufferParition(size_t index) {
+unique_ptr<ENetPacket> LobbyManagementService::popFromReceiveBufferParition(size_t index) {
     return receiveBuffer.popFromPartition(index);
 }
 
-vector<unique_ptr<BufferHandler>> LobbyManagementService::popAllFromReceiveBufferParition(size_t index) {
+vector<unique_ptr<ENetPacket>> LobbyManagementService::popAllFromReceiveBufferParition(size_t index) {
     return receiveBuffer.popAllFromPartition(index);
 }
 
-bool LobbyManagementService::pushToReceiveBufferPartition(size_t index, unique_ptr<BufferHandler> packet) {
+bool LobbyManagementService::pushToReceiveBufferPartition(size_t index, unique_ptr<ENetPacket> packet) {
     return receiveBuffer.pushToPartition(index, std::move(packet));
 }
 
-void LobbyManagementService::pushToOutputBuffer(unique_ptr<BufferHandler> packet) {
+void LobbyManagementService::pushToOutputBuffer(unique_ptr<ENetPacket> packet) {
     outputBuffer.addPacket(std::move(packet));
 }
 

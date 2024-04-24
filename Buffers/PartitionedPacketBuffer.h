@@ -29,11 +29,11 @@ public:
     void freePartition(size_t index);
 
     // TODO: push/pop from partitions
-    bool pushToPartition(size_t index, unique_ptr<BufferHandler> packet);
+    bool pushToPartition(size_t index, unique_ptr<ENetPacket> packet);
 
-    unique_ptr<BufferHandler> popFromPartition(size_t index);
+    unique_ptr<ENetPacket> popFromPartition(size_t index);
 
-    vector<unique_ptr<BufferHandler>> popAllFromPartition(size_t index);
+    vector<unique_ptr<ENetPacket>> popAllFromPartition(size_t index);
 
     void notifyAllOnPartition(size_t index);
 

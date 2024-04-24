@@ -69,23 +69,27 @@ void Gateway::networkLoop() {
                 case ENET_EVENT_TYPE_RECEIVE: {
                     cout << "Received Packet!" << endl;
                     //TODO: Pass to the middle buffer, if NEW CLIENT slaves will translate IP to MAC ID if authenticated
-
-                    auto odPacket = GetOD_Packet(event.packet->data);
-                    if(!odPacket){
+                    auto od_Packet = flatbuffers::GetRoot<OD_Packet>(event.packet->data);
+//                    auto odPacket = GetOD_Packet(event.packet->data);
+                    if(!od_Packet){
                         cerr << "Invalid Packet: No serial Data" << endl;
                         break;
                     }
 
                     // TODO: Unravel the serialized bytes and read the lobby_number field and then call pushToPartition(int lobby_number):
-                    auto lobbyNumber = odPacket->lobby_number();
-                    cout << "A packet of length " << event.packet->dataLength << " was received from " << odPacket->source_point()->address() << ", " << odPacket->source_point()->port() << endl;
+                    auto lobbyNumber = od_Packet->lobby_number();
+                    cout << "A packet of length " << event.packet->dataLength << " was received from " << od_Packet->source_point()->address() << ", " << od_Packet->source_point()->port() << endl;
 
                     if(receiveBuffer->partitionExists(lobbyNumber)){
                         //copy the bytes from EnetPacket into a temp, because that previous pointer to a byte array is managed by Enet, so we can't simply steal that pointer
-                        std::unique_ptr<uint8_t[]> bufferCopy(new uint8_t[event.packet->dataLength]);
-                        memcpy(bufferCopy.get(), event.packet->data, event.packet->dataLength);
-                        unique_ptr<BufferHandler> packetBufferHandler = std::make_unique<BufferHandler>(std::move(bufferCopy), event.packet->dataLength);
-                        receiveBuffer->pushToPartition(lobbyNumber, std::move(packetBufferHandler));
+//                        std::unique_ptr<uint8_t[]> bufferCopy(new uint8_t[event.packet->dataLength]);
+//                        memcpy(bufferCopy.get(), event.packet->data, event.packet->dataLength);
+//                        unique_ptr<BufferHandler> packetBufferHandler = std::make_unique<BufferHandler>(std::move(bufferCopy), event.packet->dataLength);
+//                        receiveBuffer->pushToPartition(lobbyNumber, std::move(packetBufferHandler));
+
+                        // new implementation, where ENetPackets are moved around as opposed to BufferHandlers
+                        unique_ptr<ENetPacket> finalPacket(event.packet);
+                        receiveBuffer->pushToPartition(lobbyNumber, std::move(finalPacket));
 
                         cout << "Added to Lobby #" << lobbyNumber << "'s partition" << endl;
                     }
@@ -93,7 +97,7 @@ void Gateway::networkLoop() {
                         cerr << "Lobby #" << lobbyNumber << " does not exist." << endl;
                     }
 
-                    // Clean up the packet now that we're done using it
+//                   Destroy event's data, could be a source of error
                     enet_packet_destroy(event.packet);
                     break;
                 }

@@ -23,6 +23,8 @@ struct FPSEntityState {
     BoundingBox bulletBox{};
     Vector3 position{};
     Vector3 velocity{};
+    Ray rayCast{};
+    float travelDistance;
     Vector3 hitbox{}; // TODO: This is statically defined. No need to send
 
     // Default constructor

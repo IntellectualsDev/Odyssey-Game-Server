@@ -33,7 +33,7 @@ public:
 
      void rewriteAtIndex(int i, T &&value){
         if(isEmpty()) throw std::runtime_error("Buffer is empty");
-        int rewriteIndex = (head - 1 - i + size) & size;
+        int rewriteIndex = ((head - 1) - i + size) & size;
         buffer[rewriteIndex] = value;
     }
 
@@ -75,15 +75,6 @@ public:
         return count;
     }
 
-
-//    bool peekIfNull(){
-//        if(buffer[head] == nullptr){
-//            return true;
-//        }
-//        else{
-//            return false;
-//        }
-//    }
 
 private:
 //    std::unique_ptr<T> newestPacket;

@@ -13,7 +13,8 @@ public:
     BufferHandler(std::unique_ptr<uint8_t[]> data, size_t size): data(std::move(data)), size(size) {};
 
     const OD_Packet* getPacketView() const {
-        return GetOD_Packet(data.get());
+//        return GetOD_Packet(data.get());
+            return flatbuffers::GetRoot<OD_Packet>(data.get());
     }
 
     const uint8_t* getByteView() const {

@@ -48,7 +48,7 @@ bool PartitionedPacketBuffer::partitionExists(size_t index) {
     return false;
 }
 
-bool PartitionedPacketBuffer::pushToPartition(size_t index, unique_ptr<BufferHandler> packet) {
+bool PartitionedPacketBuffer::pushToPartition(size_t index, unique_ptr<ENetPacket> packet) {
     if(index >= partitions.size()){
         return false;
     }
@@ -63,14 +63,14 @@ bool PartitionedPacketBuffer::pushToPartition(size_t index, unique_ptr<BufferHan
     return partitions[index]->push(std::move(packet));
 }
 
-unique_ptr<BufferHandler> PartitionedPacketBuffer::popFromPartition(size_t index) {
+unique_ptr<ENetPacket> PartitionedPacketBuffer::popFromPartition(size_t index) {
     if(index >= partitions.size()){
         return nullptr;
     }
     return partitions[index]->pop();
 }
 
-vector<unique_ptr<BufferHandler>> PartitionedPacketBuffer::popAllFromPartition(size_t index) {
+vector<unique_ptr<ENetPacket>> PartitionedPacketBuffer::popAllFromPartition(size_t index) {
     return partitions[index]->popAll();
 }
 

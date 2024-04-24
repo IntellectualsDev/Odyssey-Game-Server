@@ -24,7 +24,7 @@ using namespace std;
 
 class GameLobby {
 public:
-    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, ConnectionManager* connectionManager, mutex& consoleMutex, bool showGUI);
+    GameLobby(PartitionedPacketBuffer* receiveBuffer, PacketBuffer* outputBuffer, ConnectionManager* connectionManager, std::mutex &consoleMutex, bool showGUI);
 //    GameLobby(LobbyManagementService& lobbyManagementService): LobbyServices(lobbyManagementService){};
     void start();
     void stop();
@@ -33,9 +33,10 @@ public:
 
 private:
     void run();
+    void serverTickInit();
     void processPacket(unique_ptr<BufferHandler> packet);
     void packetPreprocessing(BufferHandler& packet);
-    void update(unique_ptr<BufferHandler> packet);
+    void update(unique_ptr<ENetPacket> packet);
     void render();
     void sendDifferentials();
     void sendSnapShot();
@@ -69,7 +70,9 @@ private:
 //    const float tickRate = 60.0f;
     std::chrono::steady_clock::time_point lastTick;
 
-
+    // change to reflect the current serverIP
+    static constexpr const char* serverIP = "192.168.0.10";
+    static constexpr const int serverPort = 5450;
 
     bool showGUI;
     int screenWidth;

@@ -53,7 +53,6 @@ add_executable(Odyssey_Game_Server main.cpp
         Buffers/CircularBuffer.h
         Components/GameLobby.cpp
         Components/GameLobby.h
-        Buffers/LIFOCircularBuffer.cpp
         Buffers/LIFOCircularBuffer.h
         Games/FPSGame/FPSRules.h
         Games/FPSGame/FPS_Player.cpp

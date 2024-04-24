@@ -16,16 +16,16 @@ public:
     optional<size_t> createReceiveBufferPartition();
     void freeReceiveBufferPartition(size_t index);
 
-    unique_ptr<BufferHandler> popFromReceiveBufferParition(size_t index);
-    vector<unique_ptr<BufferHandler>> popAllFromReceiveBufferParition(size_t index);
-    bool pushToReceiveBufferPartition(size_t index, unique_ptr<BufferHandler> packet);
+    unique_ptr<ENetPacket> popFromReceiveBufferParition(size_t index);
+    vector<unique_ptr<ENetPacket>> popAllFromReceiveBufferParition(size_t index);
+    bool pushToReceiveBufferPartition(size_t index, unique_ptr<ENetPacket> packet);
     void notifyAllOnPartition(size_t index);
 
     void receiveBufferStats();
     void myPartitionStats();
 
     // TODO: Standard Output Buffer methods
-    void pushToOutputBuffer(unique_ptr<BufferHandler> packet);
+    void pushToOutputBuffer(unique_ptr<ENetPacket> packet);
 
     // TODO: Encapsulated Game Logic methods
 

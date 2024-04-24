@@ -8,7 +8,7 @@ CircularBuffer::CircularBuffer(size_t capacity) : capacity(capacity){
     buffer.resize(capacity);
 }
 
-bool CircularBuffer::push(unique_ptr<BufferHandler> packet) {
+bool CircularBuffer::push(unique_ptr<ENetPacket> packet) {
     unique_lock<std::mutex> lock(mutex);
 
     if(isFull()){
@@ -31,7 +31,7 @@ bool CircularBuffer::push(unique_ptr<BufferHandler> packet) {
 //    });
 }
 
-unique_ptr<BufferHandler> CircularBuffer::pop() {
+unique_ptr<ENetPacket> CircularBuffer::pop() {
     unique_lock<std::mutex> lock(mutex);
     if(isEmpty()){
         return nullptr;
@@ -56,13 +56,13 @@ unique_ptr<BufferHandler> CircularBuffer::pop() {
 }
 
 //TODO: get rid of optional
-vector<unique_ptr<BufferHandler>> CircularBuffer::popAll() {
+vector<unique_ptr<ENetPacket>> CircularBuffer::popAll() {
     unique_lock<std::mutex> lock(mutex);
     if(isEmpty()){
-        vector<unique_ptr<BufferHandler>> empty;
+        vector<unique_ptr<ENetPacket>> empty;
         return empty;
     }
-    vector<unique_ptr<BufferHandler>> output;
+    vector<unique_ptr<ENetPacket>> output;
     output.reserve(count);
     while(!isEmpty()){
         output.push_back(std::move(buffer[head]));

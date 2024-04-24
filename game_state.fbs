@@ -62,6 +62,11 @@ table OD_Camera3D {
     projection: int;
 }
 
+table Buffer{
+    client_id: int;
+    buffered_client_tick: int;
+}
+
 // Define the contents of an Entity
 table Entity {
     entity_id: uint;
@@ -106,6 +111,12 @@ table Input {
     sprint: bool;
     crouch: bool;
     //implement future support for sliding
+
+    // TODO: implement list[{client ID & buffered tick}]
+    // send changes to opponents buffer, NOT ALL!!!
+    opponent_buffer_ticks:[Buffer];
+    // where the buffered tick is the player's client tick that the opponent is being rendered at
+    // (rendered tick is older than the current tick, creating buffering)
 }
 
 table ClientInputs {
@@ -142,9 +153,16 @@ union PayloadTypes{
     ClientStates,
     ClientInputs
 }
-
+/*
 table Payload{
     payload: PayloadTypes;
+}
+*/
+table Payload{
+    payload_CI: ClientInputs;
+    payload_PD: AllPlayerDeltas;
+    payload_PS: AllPlayerSnapshots;
+    payload_I: Input;
 }
 
 table OD_Packet {
@@ -154,7 +172,8 @@ table OD_Packet {
     source_point: SourcePoint;
     lobby_number :uint;
     reliable: bool; //TODO: find a way to keep this out of the buffer (but have a way for the transmitter to check if it is reliable)
-    tick: Tick;
+    server_tick: Tick;
+    client_tick: Tick;
     payload: Payload;
 }
 

@@ -37,7 +37,7 @@ private:
     void transmitLoop();
     ENetPeer * connect(const string& clientIP, int port);
     bool disconnect(const string& client);
-    void transmitPacket(unique_ptr<BufferHandler> packet);
+    void transmitPacket(unique_ptr<ENetPacket> packet);
 
     ENetHost* server;
     ENetAddress address;

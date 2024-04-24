@@ -105,6 +105,7 @@ void FPS_Player::UpdatePlayer(FPSClientState& previousState, FPSClientState& cur
         }
 
         FPSEntityState& temp = currentState.entities[index];
+//        temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(currentState.camera),0.7f));
         temp.position = Vector3Add(currentState.camera.position, Vector3Scale(camera_direction(currentState.camera),0.7f));
         temp.velocity = Vector3Scale(camera_direction(currentState.camera),5.0f);
 //        temp.hitbox = (Vector3){0.1f,0.1f,0.1f};
@@ -151,10 +152,15 @@ Vector3 FPS_Player::camera_direction(Camera& tcamera) {
 void FPS_Player::updateEntities(FPSClientState& currentState, float dt) {
     for (int i = 0; i < currentState.entities.size(); i++) {
         if(currentState.entities[i].alive){
+            Vector3 oldPosition = currentState.entities[i].position;
             Vector3 temp = Vector3Add(
                     currentState.entities[i].position,
                     Vector3Scale(currentState.entities[i].velocity, dt*10));
             currentState.entities[i].position = (Vector3){temp.x,temp.y,temp.z};
+
+            // create the entity raycasts to be used in checkEntityCollisions()
+            currentState.entities[i].rayCast = Ray{oldPosition, Vector3Normalize(currentState.entities[i].velocity)};
+            currentState.entities[i].travelDistance =  Vector3Length(Vector3Scale(currentState.entities[i].velocity, dt));
         }else if (!currentState.entities[i].alive && currentState.entities[i].claimed){
             currentState.entities[i] = FPSEntityState(); // clear the element without erasing the index
             currentState.entities[i].alive = false;

@@ -122,7 +122,7 @@ std::vector<BoundingBox> FPS_Game::topBoxVector = {
         {(Vector3){-FPS_Game::floorLength/2,-0.5,-FPS_Game::floorLength/2},(Vector3){FPS_Game::floorLength/2,0.5,FPS_Game::floorLength/2}}
 };
 
-FPS_Game::FPS_Game(): playerStates(), deltaStates() {}
+FPS_Game::FPS_Game(): playerStates(), deltaStates(), serverToClientTick(), clientToServerTick(), opponentBuffering(){}
 
 //FPS_Game::FPS_Game(): previousStatesOfPlayers(), currentStatesOfPlayers(), cumulativeDeltaStatesPlayers() {
 //
@@ -174,8 +174,18 @@ size_t FPS_Game::createNewPlayer(Vector3 initPosition, Vector3 initVelocity, flo
     }
 
     if(!slotFound){
+        // create a circular Buffers for player state and delta state for new player
         auto [statesIter, statesInserted] = playerStates.insert({playerIDCount, LIFOCircularBuffer<unique_ptr<FPSClientState>>(MAX_HISTORY_PACKETS)});
-        auto [deltasIter, deltaInserted] = deltaStates.insert({playerIDCount, LIFOCircularBuffer<unique_ptr<FPSClientState>>(MAX_HISTORY_PACKETS)});
+//        auto [deltasIter, deltaInserted] = deltaStates.insert({playerIDCount, LIFOCircularBuffer<unique_ptr<FPSClientState>>(MAX_HISTORY_PACKETS)});
+        deltaStates.insert({playerIDCount, LIFOCircularBuffer<unique_ptr<FPSClientState>>(MAX_HISTORY_PACKETS)});
+
+        // init server <-> client mappings
+        clientToServerTick[playerIDCount] = unordered_map<int, int>();
+        serverToClientTick[playerIDCount] = unordered_map<int, int>();
+
+        // init opponent buffer map
+        opponentBuffering[playerIDCount] = unordered_map<int, int>();
+
         statesIter->second.push(std::make_unique<FPSClientState>(std::move(initState)));
         id = playerIDCount;
         playerIDCount += 1;
@@ -183,6 +193,15 @@ size_t FPS_Game::createNewPlayer(Vector3 initPosition, Vector3 initVelocity, flo
 
     return id;
 }
+
+//void FPS_Game::generateEntityRaycasts(int serverTickRate) {
+//    for(auto& player : playerStates){
+//        auto& currentState = player.second.peek();
+//        for(auto& entity : currentState->entities){
+//            entity.raycastedPosition =
+//        }
+//    }
+//}
 
 /*
  * Handles Desynchronized Server and Client tick rates by updating a mapping of Client to Server Ticks. It is resilient to variable/oscillating Client tick rates, and
@@ -208,12 +227,18 @@ void FPS_Game::mapDesyncClientandServerTicks(size_t playerIndex, int serverTick,
 
 void FPS_Game::updatePlayer(int playerIndex, int serverTick, vector<const Input *> inputs, float serverTickRate) {
     FPSClientState currentState;
-    auto iter = playerStates.find(playerIndex);
-    if(iter == playerStates.end()){
+    auto playerStatesIter = playerStates.find(playerIndex);
+    auto opponentBufferingIter = opponentBuffering.find(playerIndex);
+    if(playerStatesIter == playerStates.end()){
         fprintf(stderr, "Error: retrieving Circular State Buffer for player ID # %d. playerID not found in playerStates map.\n\tFPS_Game.cpp ~  updatePlayer(vector<const Input *>)", playerIndex);
+        return;
+    }
+    if(opponentBufferingIter == opponentBuffering.end()){
+        fprintf(stderr, "Error: retrieving most Opponent Buffering Map for player ID # %d. playerID not found in opponentBuffering map.\n\tFPS_Game.cpp ~ getMostPlayerMostCurrentState()", playerIndex);
+        return;
     }
 
-    std::unique_ptr<FPSClientState>& mostRecentState = iter->second.peek();
+    std::unique_ptr<FPSClientState>& mostRecentState = playerStatesIter->second.peek();
 
     // clone the most Recent State and undo the outer unique_ptr to create a mutable version of the most recent state
     std::unique_ptr<FPSClientState> mostRecentStateClone = (*mostRecentState).clone();
@@ -231,12 +256,21 @@ void FPS_Game::updatePlayer(int playerIndex, int serverTick, vector<const Input 
                                      (Vector2){input->mouse_delta()->x(), input->mouse_delta()->y()},
                                      input->shoot(),
                                      input->space(),
-                                     input->tick()->dt(),
+                                     (1.0 / serverTickRate), // TODO: replace with server dt
                                      FPS_Game::terrainVector,
                                      FPS_Game::topBoxVector,
                                      input->sprint(),
                                      input->crouch(),
                                      serverTickRate);
+
+            // update the client's opponent buffering map for each input
+            // TODO: copy over the buffering vector instead of iterating as it will change each tick
+            if(input->opponent_buffer_ticks()->size() > 0 || input->opponent_buffer_ticks() != nullptr){
+                auto opponentBufferUpdates = input->opponent_buffer_ticks();
+                for( auto buffer : *opponentBufferUpdates){
+                    opponentBufferingIter->second[buffer->client_id()] = buffer->buffered_client_tick();
+                }
+            }
 
             // update the mostRecentState and reset the currentState
             mostRecentStateMutable = std::move(currentState);
@@ -262,7 +296,7 @@ void FPS_Game::updatePlayer(int playerIndex, int serverTick, vector<const Input 
 
         printFPSClientState(mostRecentStateMutable);
         mostRecentStateMutable.tick = serverTick; // assign the current server tick to this new state
-        iter->second.push(std::make_unique<FPSClientState>(std::move(mostRecentStateMutable)));
+        playerStatesIter->second.push(std::make_unique<FPSClientState>(std::move(mostRecentStateMutable)));
     }
 }
 
@@ -285,7 +319,7 @@ void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,V
                      mouseDelta,
                      shoot,
                      space,
-                     dt,
+                     (1.0/serverTickRate),
                      FPS_Game::terrainVector,
                      FPS_Game::topBoxVector,
                      sprint,
@@ -351,11 +385,11 @@ void FPS_Game::updatePlayer(size_t playerIndex, bool w, bool a, bool s, bool d,V
    //call Player's static method using the current and previous state's using the player index:  Player::UpdatePlayer()
 }
 
-void FPS_Game::updateEntities(){
+void FPS_Game::updateEntities(int serverTickRate){
     for(auto& playerPair: playerStates){
         if(!playerPair.second.isEmpty()){
             const unique_ptr<FPSClientState>& currentState = playerPair.second.peek();
-            FPS_Player::updateEntities(*currentState, currentState->dt);
+            FPS_Player::updateEntities(*currentState, (1.0 / serverTickRate));
         }
         else{
             fprintf(stderr, "LIFO Circular Buffer is empty. updateEntities() on client %d not possible\nFPS_Game::updateEntities() - line 279\n", playerPair.first);
@@ -388,6 +422,8 @@ void FPS_Game::checkEntityCollisions() {
     for(auto& playerPair: playerStates){
         auto& shooterState = playerPair.second.peek();
         for(auto& entity: shooterState->entities){
+            // create the raycast, based on the past position
+            Vector3 newPosition = Vector3Add(entity.position, Vector3Scale(entity.velocity, shooterState->dt));
             for(auto& otherPlayerPair : playerStates) {
                 if (playerPair.first == otherPlayerPair.first) {
                     continue;
@@ -454,18 +490,61 @@ void FPS_Game::checkEntityPlayerCollisions() {
     for(auto& playerPair: playerStates){
         auto& shooterState = playerPair.second.peek();
         for(auto& entity: shooterState->entities){
+            if(!entity.alive) continue;
+
             for(auto& otherPlayerPair : playerStates) {
                 if (playerPair.first == otherPlayerPair.first) {
                     continue;
                 }
 
-                auto &targetState = otherPlayerPair.second.peek();
-                if (CheckCollisionBoxes(entity.bulletBox, targetState->playerBox)) {
+                auto &opponentCurrentState = otherPlayerPair.second.peek();
+
+// -------------RayCasting w/ Lag Compensation Collisions Implementation-------------------------------------------------------------------------------------------
+                // get the current server tick from the shooter's perspective
+                int currentServerTick = shooterState->tick;
+
+                // get the Shooter's Client tick that the shooter buffers the opponent at
+                int bufferClientTickOfOpponentByShooter = opponentBuffering[playerPair.first][otherPlayerPair.first];
+
+                // convert the Shooter's Client tick that it has bufferd the client at to a normalized server tick
+                int bufferedServerTickOfOpponent = clientToServerTick[playerPair.first][bufferClientTickOfOpponentByShooter];
+
+                // pull out the buffered opponent state via the calculated buffered server tick
+                // pull out the opponent's state at the buffered server tick from the perspective of the shooter
+                auto& bufferedOpponentState = otherPlayerPair.second.peekAtIndex(currentServerTick - bufferedServerTickOfOpponent + 1);
+
+                RayCollision hitInfo = GetRayCollisionBox(entity.rayCast, bufferedOpponentState->playerBox);
+                if(hitInfo.hit && hitInfo.distance <= entity.travelDistance){
                     entity.alive = false;
-                    targetState->alive = false;
-                    cout << "Client killed at loc: " << targetState->position.x << ", " << targetState->position.y
-                         << ", " << targetState->position.z << ", " << endl;
+                    opponentCurrentState->alive = false;
+                    fprintf(stdout, "Client #%d killed at loc by Client #%d at loc: (%f, %f, %f)\n\tLag Compensation Applied: {current server tick, buffered server tick} = {%d, %d}",
+                            otherPlayerPair.first,
+                            playerPair.first,
+                            bufferedOpponentState->position.x,
+                            bufferedOpponentState->position.y,
+                            bufferedOpponentState->position.z,
+                            currentServerTick,
+                            bufferedServerTickOfOpponent);
                 }
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// -------------RayCasting (no lag compensation) Collision Implementation-------------------------------------------------------------------------------------------
+//                RayCollision hitInfo = GetRayCollisionBox(entity.rayCast, targetState->playerBox);
+//                if(hitInfo.hit && hitInfo.distance <= entity.travelDistance){
+//                    entity.alive = false;
+//                    targetState->alive = false;
+//                    cout << "Client killed at loc: " << targetState->position.x << ", " << targetState->position.y
+//                         << ", " << targetState->position.z << ", " << endl;
+//                }
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------
+// -------------Non-RayCast Collision Implementation----------------------------------------------------------------------------------------------------------------
+//                if (CheckCollisionBoxes(entity.bulletBox, targetState->playerBox)) {
+//                    entity.alive = false;
+//                    targetState->alive = false;
+//                    cout << "Client killed at loc: " << targetState->position.x << ", " << targetState->position.y
+//                         << ", " << targetState->position.z << ", " << endl;
+//                }
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
             }
         }
     }
@@ -618,7 +697,7 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
                                        NULL,
                                        clientTick,
                                        snapshotRTT,
-                                       i,
+                                       playerID,
                                        state->alive,
                                        state->sprint,
                                        camera,
@@ -643,12 +722,29 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
         playerStatesOffsets.push_back(statesOffset);
     }
 
-    flatbuffers::Offset<Tick> tick = CreateTick(builder, serverTick, serverDT);
+    flatbuffers::Offset<Tick> serverTickOffset = CreateTick(builder, serverTick, serverDT);
+    int clientTick = serverToClientTick[clientID][serverTick];
+    flatbuffers::Offset<Tick> clientTickOffset = CreateTick(builder, clientTick, -99);
+
     auto playerStatesVector = builder.CreateVector(playerStatesOffsets);
 
-    auto payload = delta ?
-                                CreatePayload(builder, PayloadTypes_AllPlayerDeltas, playerStatesVector.Union())
-                                : CreatePayload(builder, PayloadTypes_AllPlayerSnapshots, playerStatesVector.Union());
+    flatbuffers::Offset<Payload> payload;
+    flatbuffers::Offset<ClientInputs> payload_CI = 0;
+    flatbuffers::Offset<AllPlayerSnapshots> payload_PS = 0;
+    flatbuffers::Offset<Input> payload_I = 0;
+    flatbuffers::Offset<AllPlayerDeltas> payload_PD = 0;
+    if(delta){
+        payload_PD = CreateAllPlayerDeltas(builder, playerStatesVector);
+        payload = CreatePayload(builder, payload_CI, payload_PD, payload_PS, payload_I);
+    }
+    else{
+        payload_PS = CreateAllPlayerSnapshots(builder, playerStatesVector);
+        payload = CreatePayload(builder, payload_CI, payload_PD, payload_PS, payload_I);
+    }
+
+//    auto payload = delta ?
+//                                CreatePayload(builder, PayloadTypes_AllPlayerDeltas, playerStatesVector.Union())
+//                                : CreatePayload(builder, PayloadTypes_AllPlayerSnapshots, playerStatesVector.Union());
 
     OD_PacketBuilder packetBuilder(builder);
     packetBuilder.add_packet_type(packetType);
@@ -657,7 +753,8 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
     packetBuilder.add_source_point(sourcePoint);
     packetBuilder.add_lobby_number(lobbyNumber);
     packetBuilder.add_reliable(reliable);
-    packetBuilder.add_tick(tick);
+    packetBuilder.add_server_tick(serverTickOffset);
+    packetBuilder.add_client_tick(clientTickOffset);
     packetBuilder.add_payload(payload);
 
     auto packet = packetBuilder.Finish();
@@ -666,14 +763,14 @@ void FPS_Game::buildServerFlatBuffer(flatbuffers::FlatBufferBuilder &builder,
 
 std::vector<const Input*> FPS_Game::parseInputPackets(int playerIndex, const flatbuffers::Vector<flatbuffers::Offset<Input>> * clientInputs) {
     std::vector<const Input*> inputsToProcess;
-    auto iter = playerStates.find(playerIndex);
+    auto playerStatesIter = playerStates.find(playerIndex);
 
-    if(iter == playerStates.end() || iter->second.isEmpty()){
+    if(playerStatesIter == playerStates.end() || playerStatesIter->second.isEmpty()){
         fprintf(stderr, "Error: retrieving most Current State for player ID # %d. playerID not found in playerStates map || Client State's map is empty.\n\tFPS_Game.cpp ~ getMostPlayerMostCurrentState()", playerIndex);
         return inputsToProcess; // Return empty vector in case of error
     }
 
-    int mostRecentServerTick = iter->second.peek()->tick;
+    int mostRecentServerTick = playerStatesIter->second.peek()->tick;
 
     // map most recent server tick to client tick
     int mostRecentClientTick = serverToClientTick[playerIndex][mostRecentServerTick];

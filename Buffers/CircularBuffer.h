@@ -26,11 +26,11 @@ class CircularBuffer {
 public:
     explicit CircularBuffer(size_t capacity);
 
-    bool push(std::unique_ptr<BufferHandler> packet);
+    bool push(std::unique_ptr<ENetPacket> packet);
 
-    std::unique_ptr<BufferHandler> pop();
+    std::unique_ptr<ENetPacket> pop();
 
-    vector<unique_ptr<BufferHandler>> popAll();
+    vector<unique_ptr<ENetPacket>> popAll();
 
     void resetBuffer();
 
@@ -42,7 +42,7 @@ public:
 
 
 private:
-    std::vector<std::unique_ptr<BufferHandler>> buffer;
+    std::vector<std::unique_ptr<ENetPacket>> buffer;
 
     mutable std::mutex mutex;
     std::condition_variable not_empty;
