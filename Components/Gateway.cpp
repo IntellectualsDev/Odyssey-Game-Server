@@ -88,7 +88,8 @@ void Gateway::networkLoop() {
 //                        receiveBuffer->pushToPartition(lobbyNumber, std::move(packetBufferHandler));
 
                         // new implementation, where ENetPackets are moved around as opposed to BufferHandlers
-                        unique_ptr<ENetPacket> finalPacket(event.packet);
+                        ENetPacket * tempPacket = enet_packet_create(event.packet->data, event.packet->dataLength, 0);
+                        unique_ptr<ENetPacket> finalPacket(tempPacket);
                         receiveBuffer->pushToPartition(lobbyNumber, std::move(finalPacket));
 
                         cout << "Added to Lobby #" << lobbyNumber << "'s partition" << endl;
