@@ -23,6 +23,9 @@ void PacketBuffer::addPacket(unique_ptr<ENetPacket> packet) {
 
         const OD_Packet* od_Packet = flatbuffers::GetRoot<OD_Packet>(packetQueue.front().get());
         cout << "Packet received in Receive Buffer with Packet Type: " << od_Packet->packet_type() << endl;
+        while(packetQueue.empty()){
+
+        }
 //        printf("Packet received in Receive Buffer.\n\tlength = %zu\n\tdata = %s\n", packetQueue.front()->packet->ge->dataLength, packetQueue.front()->packet->data);
     }
 
@@ -41,9 +44,14 @@ unique_ptr<ENetPacket> PacketBuffer::removePacket() {
     // enter wait state and unlock lock until the packetQueue is notified, then check if it satisfies the lambda function if not
     // go back to waiting. This approach prevents random wakeups as even if it is woken up randomly it will not proceed unless it
     // can
+//    buffer_Condition.wait(lock, [this] {
+//        return (!packetQueue.empty() || shutdownFlag.load());
+//    });
+
     buffer_Condition.wait(lock, [this] {
-        return (!packetQueue.empty() || shutdownFlag.load());
+        return ((numberOfPackets > 0) || shutdownFlag.load());
     });
+//    cout << "In Add Packet: " << numberOfPackets << ", " << shutdownFlag.load() << ", " << packetQueue.empty() << endl;
 
     if(packetQueue.empty() && shutdownFlag.load()){
         cout << "Packet Buffer is in shutDown. " << shutdownFlag.load() << endl << "All existing packets have been serviced." << endl;
@@ -51,8 +59,18 @@ unique_ptr<ENetPacket> PacketBuffer::removePacket() {
     }
 
     auto packet = std::move(packetQueue.front()); // pull out the packet
+    if(packetQueue.front() != nullptr){
+        cout << "before pop packetqueue.front is not nulltpr" << endl;
+    }
     packetQueue.pop();
+    if(packetQueue.front() != nullptr){
+        cout << "after pop packetqueue.front is not nulltpr" << endl;
+        cout << packetQueue.size() << endl;
+    }
     numberOfPackets--;
+    if(packet == nullptr){
+        cout << "FUCK " << endl;
+    }
     return packet;
 }
 

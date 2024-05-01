@@ -27,7 +27,7 @@ showGUI(showGUI){
     // TODO: will be removed once, there is handshake and will be dynamically called
     // given the initial ID of 0
     game.createNewPlayer((Vector3){0,2,1},(Vector3){0,0,0}, 1.0f/60.0f);
-    connectionManager->addPlayer(0, IPEndpoint({"192.168.56.1", 5453}));
+    connectionManager->addPlayer(0, IPEndpoint({"192.168.1.13", 5453}));
 }
 
 void GameLobby::start() {
@@ -264,21 +264,18 @@ void GameLobby::sendSnapShot() {
         }
         const OD_Packet* od_Packet = flatbuffers::GetRoot<OD_Packet>(buffer);
 
-        enet_uint32 flags = 0;
-        if(od_Packet->reliable()){
-            flags = ENET_PACKET_FLAG_RELIABLE;
-        }
+        enet_uint32 flags = od_Packet->reliable() ? ENET_PACKET_FLAG_RELIABLE : 0;
 
-        ENetPacket* packetToSend = enet_packet_create(buffer, size, flags);
-        unique_ptr<ENetPacket> finalPacket(packetToSend);
+
+        std::unique_ptr<ENetPacket> finalPacket(enet_packet_create(buffer, size, flags));
         outputBuffer->addPacket(std::move(finalPacket));
 
 
         // test that the vectors within the fsb are accesible
-        auto odpacket = flatbuffers::GetRoot<OD_Packet>(buffer);
-        size_t size_snapshots = odpacket->payload()->payload_PS()->payload()->size();
-        auto itemRTT = odpacket->payload()->payload_PS()->payload()->Get(0)->state_as_ClientStates()->rtt();
-        auto itemAlive = odpacket->payload()->payload_PS()->payload()->Get(0)->state_as_ClientStates()->client_states()->Get(0)->alive();
+//        auto odpacket = flatbuffers::GetRoot<OD_Packet>(buffer);
+//        size_t size_snapshots = odpacket->payload()->payload_PS()->payload()->size();
+//        auto itemRTT = odpacket->payload()->payload_PS()->payload()->Get(0)->state_as_ClientStates()->rtt();
+//        auto itemAlive = odpacket->payload()->payload_PS()->payload()->Get(0)->state_as_ClientStates()->client_states()->Get(0)->alive();
 
     }
 }

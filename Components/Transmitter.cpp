@@ -57,8 +57,11 @@ void Transmitter::shutdown() {
 void Transmitter::transmitLoop() {
     while(!shutdownFlag.load()){
         auto bufferHandler = transmitBuffer->removePacket();
+        cout << "here1" << endl;
         if(bufferHandler != nullptr){
+            cout << "here3" <<endl;
             transmitPacket(std::move(bufferHandler));
+            cout << "here2" << endl;
         }
         else{
             fprintf(stderr, "ERR in Transmitter's transmitLoop() method | line 27\n\tTransmitter pulled a NULL packet from buffer\n\n");
@@ -67,19 +70,22 @@ void Transmitter::transmitLoop() {
 
 }
 
-void Transmitter::transmitPacket(unique_ptr<ENetPacket> packet){
+void Transmitter::transmitPacket(std::unique_ptr<ENetPacket> packet){
+    cout <<"in transmitpacket" << endl;
     ENetEvent event;
     ENetPeer * client;
 //    ENetPacket* packetToSend;
 
 //    const OD_Packet* OD_Packet = packet->data;
     auto byteBuffer = packet->data;
+    cout << "accessed packet data" <<endl;
     auto od_Packet = flatbuffers::GetRoot<OD_Packet>(byteBuffer);
-
+    cout << "here 5" << endl;
 //    packetToSend = enet_packet_create(packet->getByteView(), packet->getSize(), flags);
     int clientID = od_Packet->client_id();
-
+    cout << "here 6" << endl;
     client = connect(od_Packet->dest_point()->address()->str(), od_Packet->dest_point()->port());
+    cout << "here 7" << endl;
     if (client != nullptr) {
         connectionManager->setPeer(clientID, client);
     } else {
@@ -101,16 +107,20 @@ void Transmitter::transmitPacket(unique_ptr<ENetPacket> packet){
 //    else {
 //        client = connectionManager->getPeer(clientID);
 //    }
-
+//    {
+//        std::lock_guard<std::mutex> guard(consoleMutex);
+//        fprintf(stdout, "Game Server's Transmitter Sent packet\n\tpayload_type = %s\n", EnumNamePacketType(od_Packet->packet_type()));
+//    }
     enet_host_service(server, & event, 0);
+    ENetPacket * raw = packet.release();
 //    ENetPacket* packetToSend = enet_packet_create(packet->getByteView(), packet->getSize(), flags);
-    enet_peer_send(client, 0, packet.get());
+    cout << "about to send" << endl;
+    enet_peer_send(client, 0, raw);
+    cout << "sent" << endl;
     enet_host_flush(server);
 
-    {
-        std::lock_guard<std::mutex> guard(consoleMutex);
-        fprintf(stdout, "Game Server's Transmitter Sent packet\n\tpayload_type = %s\n", EnumNamePacketType(od_Packet->packet_type()));
-    }
+
+
 }
 
 ENetPeer * Transmitter::connect(const std::string &clientIP, int port) {
